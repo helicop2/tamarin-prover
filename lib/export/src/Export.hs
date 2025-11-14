@@ -376,6 +376,7 @@ auxppTerm ppLit t = (ppTerm t, getHdTerm t)
   where
     ppTerm tm = case viewTerm tm of
       Lit v -> ppLit v
+      FApp (AC (ACfct (f, _))) _ -> translationFail $ "User defined AC function" ++ show f ++ "not supported "
       FApp (AC Xor) ts -> ppXor ts
       FApp (AC o) ts -> ppTerms (ppACOp o) 1 "(" ")" ts
       FApp (NoEq s) [] | s == natOneSym -> text "1"
@@ -1356,11 +1357,12 @@ headersOfType types =
       types
 
 headerOfFunSym :: SapicFunSym -> S.Set ProVerifHeader
-headerOfFunSym ((f, (k, pub, Constructor)), inTypes, outType) =
+headerOfFunSym ((NoEqUser (f, (k, pub, Constructor))), inTypes, outType) =
   Fun "fun" (ppFunSym f) k ("(" ++ makeArgtypes inTypes ++ "):" ++ ppType outType) (priv_or_pub pub) `S.insert` headersOfType (outType : inTypes)
   where
     priv_or_pub Public = []
     priv_or_pub Private = ["private"]
+headerOfFunSym ((ACfctUser f), _, _) = translationFail $ "User defined AC function" ++ show f ++ "not supported "-- "AC function not supported"
 headerOfFunSym _ = S.empty
 
 -- | Load headers from an OpenTheory into a set of ProVerif Headers

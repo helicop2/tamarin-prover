@@ -544,7 +544,7 @@ addAutoSourcesLemma hnd lemmaName (ClosedRuleCache _ raw _ _) items =
 -- Open theory construction / modification
 ------------------------------------------------------------------------------
 defaultOption :: Option
-defaultOption = Option False False False False False False False False False S.empty [] 10 5
+defaultOption = Option False False False False False False False False False True S.empty [] 10 5
 
 -- | Default theory
 defaultOpenTheory :: Bool -> OpenTheory
@@ -870,7 +870,7 @@ prettyEitherRule (_, p) = prettyProtoRuleE $ L.get oprRuleE p
 prettyOpenTheory :: (HighlightDocument d) => OpenTheory -> d
 prettyOpenTheory thy =
   prettyTheory
-    prettySignaturePure
+    (prettySignaturePureExcept funsyms)
     (const emptyDoc)
     prettyOpenProtoRule
     prettyProof
@@ -881,7 +881,8 @@ prettyOpenTheory thy =
 
     funsyms = S.fromList $ map fst' $ theoryFunctionTypingInfos thy
     -- function symbols that are printed by sapic printer already
-    fst' (a, _, _) = a
+    fst' (NoEqUser a,_,_) = NoEqUser a
+    fst' (ACfctUser a, _, _) = ACfctUser a
 
 -- | Pretty print an open theory.
 prettyOpenDiffTheory :: (HighlightDocument d) => OpenDiffTheory -> d
@@ -943,3 +944,9 @@ prettyDiffTheory ppSig ppCache ppRule ppDiffPrf ppPrf thy =
         prettyConfigBlock
     thyH = L.get diffThyHeuristic thy
     thyT = L.get diffThyTactic thy
+
+prettyOpenRuleCache :: HighlightDocument d => OpenRuleCache -> d
+prettyOpenRuleCache = vcat . map prettyIntrRuleAC
+
+prettyOpenRuleCacheWithLimit :: HighlightDocument d => OpenRuleCache -> d
+prettyOpenRuleCacheWithLimit = vcat . map prettyIntrRuleACWithLimit

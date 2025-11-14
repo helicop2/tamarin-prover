@@ -47,6 +47,9 @@ module Theory.Model.Fact (
   , isSolveFirstFact
   , isSolveLastFact
   , isNoSourcesFact
+  , isTrivialKUFact
+  , isNearlyTrivialKUFact
+  , isNearlyTrivialACKUFact
 
   , DirTag(..)
   , kuFact
@@ -81,6 +84,8 @@ module Theory.Model.Fact (
   , protoFactAnn
   , annotateFact
   , applyMacroInFact
+  , freesToFresh
+  , lvarToLnterm
 
   -- * NFact
   , NFact
@@ -232,6 +237,21 @@ isKUFact :: LNFact -> Bool
 isKUFact (Fact KUFact _ _) = True
 isKUFact _                 = False
 
+-- | True if the fact is a trivial KU-fact, i.e., contains a simple msg variable.
+isTrivialKUFact :: LNFact -> Bool
+isTrivialKUFact (Fact KUFact _ [t]) = isMsgVar t
+isTrivialKUFact _                   = False
+
+-- | True if the fact is a "nearly" trivial KU-fact, i.e., contains a given operator where all arguments are simple msg variables.
+isNearlyTrivialKUFact :: String -> LNFact -> Bool
+isNearlyTrivialKUFact s (Fact KUFact _ [t]) = isTrivialFunSymTerm t s
+isNearlyTrivialKUFact _ _                   = False
+
+-- | True if the fact is a "nearly" trivial KU-fact, i.e., contains a AC operator where all arguments are simple msg variables.
+isNearlyTrivialACKUFact :: LNFact -> Bool
+isNearlyTrivialACKUFact (Fact KUFact _ [t]) = isTrivialACFunSymTerm t
+isNearlyTrivialACKUFact _                   = False
+
 -- | True if the fact is a KD-fact.
 isKDFact :: LNFact -> Bool
 isKDFact (Fact KDFact _ _) = True
@@ -301,6 +321,15 @@ annotateFact ann' (Fact tag ann ts) = Fact tag (S.union ann' ann) ts
 applyMacroInFact :: [Macro] -> LNFact -> LNFact
 applyMacroInFact mcs (Fact tag annot terms) = let mTerms = map (applyMacros mcs) terms in
                                               Fact tag annot mTerms
+
+
+-- Transforms different kind of facts into the desired form
+freesToFresh :: [LVar] -> [LNFact]
+freesToFresh = map (freshFact . lvarToLnterm)
+
+lvarToLnterm :: LVar -> LNTerm
+lvarToLnterm (LVar name LSortNat idx) = LIT $ Var $ LVar name LSortFresh idx
+lvarToLnterm v                        = LIT $ Var v
 
 -- Queries on facts
 -------------------

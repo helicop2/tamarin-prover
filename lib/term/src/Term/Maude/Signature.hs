@@ -19,6 +19,7 @@ module Term.Maude.Signature (
   , enableXor
   , enableNat
   , stFunSyms
+  , stACFunSyms
   , stRules
   , eqConvergent
   , funSyms
@@ -26,6 +27,9 @@ module Term.Maude.Signature (
   , reducibleFunSyms
   , rrulesForMaudeSig
   , noEqFunSyms
+  , acUserFunSyms
+  , userDefineFunSyms
+  , userDefineSTFunSyms
 
   -- * predefined maude signatures
   , dhMaudeSig
@@ -36,7 +40,7 @@ module Term.Maude.Signature (
   , pairDestMaudeSig
   , asymEncDestMaudeSig
   , symEncDestMaudeSig
-  , signatureDestMaudeSig  
+  , signatureDestMaudeSig
   , revealSignatureMaudeSig
   , locationReportMaudeSig
   , hashMaudeSig
@@ -87,6 +91,7 @@ data MaudeSig = MaudeSig
     , enableXor          :: Bool
     , enableDiff         :: Bool
     , stFunSyms          :: S.Set NoEqSym     -- ^ function signature for subterm theory
+    , stACFunSyms        :: S.Set ACfctSym
     , stRules            :: S.Set CtxtStRule  -- ^ rewriting rules for subterm theory
     , eqConvergent       :: Bool            -- ^ convergence information for equations
     , funSyms            :: FunSig            -- ^ function signature including the
@@ -98,7 +103,7 @@ data MaudeSig = MaudeSig
     deriving (Ord, Show, Eq, Generic, NFData, Binary)
 
 maudeSig :: MaudeSig -> MaudeSig
-maudeSig msig@MaudeSig{enableDH, enableBP, enableMSet, enableNat, enableXor, enableDiff = _, stFunSyms, stRules, eqConvergent} =
+maudeSig msig@MaudeSig{enableDH, enableBP, enableMSet, enableNat, enableXor, enableDiff = _, stFunSyms, stACFunSyms, stRules, eqConvergent} =
     msig {enableDH=enableDH||enableBP, funSyms=allfuns, irreducibleFunSyms=irreduciblefuns, reducibleFunSyms=reducible, eqConvergent=eqConvergent}
   where
     allfuns = S.map NoEq stFunSyms
@@ -107,6 +112,7 @@ maudeSig msig@MaudeSig{enableDH, enableBP, enableMSet, enableNat, enableXor, ena
                 `S.union` (if enableMSet           then msetFunSig else S.empty)
                 `S.union` (if enableNat            then natFunSig  else S.empty)
                 `S.union` (if enableXor            then xorFunSig  else S.empty)
+                `S.union` S.map (AC . ACfct) stACFunSyms
     irreduciblefuns = allfuns `S.difference` reducibleWithoutMult
     reducibleWithoutMult =
         S.fromList [ o | CtxtStRule (viewTerm -> FApp o _) _ <- S.toList stRules]
@@ -115,8 +121,8 @@ maudeSig msig@MaudeSig{enableDH, enableBP, enableMSet, enableNat, enableXor, ena
 
 -- | A monoid instance to combine maude signatures.
 instance Semigroup MaudeSig where
-    MaudeSig dh1 bp1 mset1 nat1 xor1 diff1 stFunSyms1 stRules1 _ _ _ _ <>
-      MaudeSig dh2 bp2 mset2 nat2 xor2 diff2 stFunSyms2 stRules2 _ _ _ _ =
+    MaudeSig dh1 bp1 mset1 nat1 xor1 diff1 stFunSyms1 stACFunSyms1 stRules1 _ _ _ _ <>
+      MaudeSig dh2 bp2 mset2 nat2 xor2 diff2 stFunSyms2 stACFunSyms2 stRules2 _ _ _ _ =
           maudeSig (mempty {enableDH=dh1||dh2
                            ,enableBP=bp1||bp2
                            ,enableMSet=mset1||mset2
@@ -124,6 +130,7 @@ instance Semigroup MaudeSig where
                            ,enableXor=xor1||xor2
                            ,enableDiff=diff1||diff2
                            ,stFunSyms=unionExceptPairSym stFunSyms1 stFunSyms2
+                           ,stACFunSyms=S.union stACFunSyms1 stACFunSyms2
                            ,stRules=unionExceptPairRules stRules1 stRules2})
           -- an exception to merging is the destructor variants for pair, which is exclusive
           -- in general, it might make sense to not merge fun syms with same identifier
@@ -135,18 +142,29 @@ instance Semigroup MaudeSig where
                                          S.union (st1 `S.difference` pairRules) st2
                                        else
                                          S.union st1 st2
-                  
+
 instance Monoid MaudeSig where
-    mempty = MaudeSig False False False False False False S.empty S.empty False S.empty S.empty S.empty
+    mempty = MaudeSig False False False False False False S.empty S.empty S.empty False S.empty S.empty S.empty
 
 -- | Non-AC function symbols.
 noEqFunSyms :: MaudeSig -> NoEqFunSig
 noEqFunSyms msig = S.fromList [ o | NoEq o <- S.toList (funSyms msig) ]
 
+-- | AC function symbols.
+acUserFunSyms :: MaudeSig -> ACfctFunSig
+acUserFunSyms msig = S.fromList [ o | AC (ACfct o) <- S.toList (funSyms msig) ]
+
+userDefineFunSyms :: MaudeSig -> UserDefineSig
+userDefineFunSyms msig = S.map NoEqUser (noEqFunSyms msig) `S.union` S.map ACfctUser (acUserFunSyms msig)
+
+userDefineSTFunSyms :: MaudeSig -> UserDefineSig
+userDefineSTFunSyms msig = S.map NoEqUser (stFunSyms msig) `S.union` S.map ACfctUser (acUserFunSyms msig)
+
 -- | Add function symbol to given maude signature.
-addFunSym :: NoEqSym -> MaudeSig -> MaudeSig
-addFunSym funsym msig =
-    msig `mappend` mempty {stFunSyms=S.fromList [funsym]}
+addFunSym :: UserDefineSym -> MaudeSig -> MaudeSig
+addFunSym funsym msig = case funsym of
+  NoEqUser f  -> msig `mappend` mempty {stFunSyms=S.fromList [f]}
+  ACfctUser f -> msig `mappend` mempty {stACFunSyms=S.fromList [f]}
 
 -- | Add subterm rule to given maude signature.
 addCtxtStRule :: CtxtStRule -> MaudeSig -> MaudeSig
@@ -207,10 +225,10 @@ enableDiffMaudeSig = maudeSig $ mempty {enableDiff=True}
 -- Pretty Printing
 ------------------------------------------------------------------------------
 
-prettyMaudeSigExcept :: P.HighlightDocument d => MaudeSig -> S.Set NoEqSym -> d
+prettyMaudeSigExcept :: P.HighlightDocument d => MaudeSig -> S.Set UserDefineSym -> d
 prettyMaudeSigExcept sig excl = P.vcat
     [ ppNonEmptyList' "builtins:"  P.text      builtIns
-    , ppNonEmptyList' "functions:" ppFunSymb $ S.toList (stFunSyms sig S.\\ excl)
+    , ppNonEmptyList' "functions:" ppFunSymb $ (S.toList (S.map (\fct -> (NoEqUser fct)) (stFunSyms sig S.\\ exclNoEq)) ++ S.toList (S.map (\fct -> (ACfctUser fct)) (stACFunSyms sig S.\\ exclAC)))
     , ppNonEmptyList
         (\ds -> P.sep ((if eqConvergent sig then P.keyword_ "equations [convergent]:" else P.keyword_ "equations:") : map (P.nest 2) ds))
         prettyCtxtStRule $ S.toList (stRules sig)
@@ -228,13 +246,24 @@ prettyMaudeSigExcept sig excl = P.vcat
       , (enableXor,  "xor")
       ]
 
-    ppFunSymb (f,(k,priv,constr)) = P.text $ BC.unpack f ++ "/" ++ show k
-                                             ++ showAttr (priv,constr)
+    ppFunSymb (NoEqUser (f,(k,priv,constr))) = P.text $ BC.unpack f ++ "/" ++ show k
+                                             ++ showAttrNoEq (priv,constr)
       where
-            showAttr (Public,Destructor) = "[destructor]"
-            showAttr (Private,Destructor) = "[private,destructor]"
-            showAttr (Private,Constructor) = "[private,constructor]"
-            showAttr (Public,Constructor) = ""
+            showAttrNoEq (Public,Destructor) = "[destructor]"
+            showAttrNoEq (Private,Destructor) = "[private,destructor]"
+            showAttrNoEq (Private,Constructor) = "[private,constructor]"
+            showAttrNoEq (Public,Constructor) = ""
+
+    ppFunSymb (ACfctUser (f,(priv,constr))) = P.text $ BC.unpack f ++ "/2" ++ showAttrAC (priv,constr)
+      where
+            showAttrAC (Public,Destructor) = "[destructor,AC]"
+            showAttrAC (Private,Destructor) = "[private,destructor,AC]"
+            showAttrAC (Private,Constructor) = "[private,AC]"
+            showAttrAC (Public,Constructor) = "[AC]"
+
+
+    exclNoEq = S.fromList [ o | NoEqUser o <- S.toList excl ]
+    exclAC = S.fromList [ o | ACfctUser o <- S.toList excl ]
 
 prettyMaudeSig :: P.HighlightDocument d => MaudeSig -> d
 prettyMaudeSig sig  = prettyMaudeSigExcept sig S.empty

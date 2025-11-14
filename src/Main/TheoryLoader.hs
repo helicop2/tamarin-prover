@@ -26,6 +26,7 @@ module Main.TheoryLoader
     dhIntruderVariantsFile,
     bpIntruderVariantsFile,
     addMessageDeductionRuleVariants,
+    addMessageDeductionRuleVariantsWithoutMaude
   )
 where
 
@@ -36,20 +37,26 @@ import Control.Exception (evaluate)
 import Control.Monad
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.Except
-import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.Reader
+
 import Data.Bifunctor (Bifunctor (bimap), first)
 import Data.Bitraversable (Bitraversable (bitraverse))
 import Data.Char (toLower)
 import Data.FileEmbed (embedFile)
-import Data.List (find, intercalate, isPrefixOf)
+import Data.Function (on)
 import Data.Map (keys)
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Set qualified
 import Debug.Trace
+import Data.List (isPrefixOf, intercalate, find, groupBy, sortOn)
+import Data.Map (keys)
+
 import Export qualified
 import Items.LemmaItem (HasLemmaAttributes, HasLemmaName)
 import Items.OptionItem (Option (..))
 import Main.Console
+
 import Safe
 import Sapic qualified
 import System.Console.CmdArgs.Explicit
@@ -68,10 +75,12 @@ import Theory.Tools.IntruderRules
     specialIntruderRules,
     subtermIntruderRules,
     xorIntruderRules,
+    destructionRulesAC,
+    destructionRulesNoEq
   )
 import Theory.Tools.MessageDerivationChecks
 import Theory.Tools.Wellformedness
-import TheoryObject (diffTheoryConfigBlock, theoryConfigBlock)
+import TheoryObject (diffTheoryConfigBlock, theoryConfigBlock, theoryConfigBlock, chainReductionCheck)
 
 ------------------------------------------------------------------------------
 -- Theory loading: shared between interactive and batch mode
@@ -450,6 +459,51 @@ translateTheory thyOpts thy = do
     withTheory f = bitraverse f pure
     theoryName = either (._thyName) (._diffThyName)
 
+checkCloseIntrRule :: SignatureWithMaude -> String -> OpenTranslatedTheory -> OpenTranslatedTheory
+checkCloseIntrRule sign name thy = thy {_thyCache = intrRulesACred}
+  where
+    hnd = sign._sigMaudeInfo
+
+    intrRules = thy._thyCache
+    intrRulesAC = concat $ map (closeIntrRule hnd) intrRules
+
+    tabT = groupBy ((==) `on` getRuleName) $ sortOn getRuleName intrRulesAC
+
+    chainReductionBool = (thy._thyOptions)._chainReductionCheck
+
+    intrRulesACred = if chainReductionBool then prettyChainReduction sign name intrRulesAC tabT chainReductionBool else applyChainReduction sign intrRulesAC tabT chainReductionBool
+
+copyLimit :: [IntrRuleAC] -> IntrRuleAC -> IntrRuleAC
+copyLimit d rule@(Rule (DestrRule _ _ _ _) _ _ _ _) = checkDiff d rule
+  where
+    checkDiff (d1:dq) r = if (getRuleName r == getRuleName d1) && (enumPrems d1 == enumPrems r) && (enumConcs d1 == enumConcs r) then d1 else checkDiff dq r
+    checkDiff [] r = r
+copyLimit _ rule = rule
+
+checkCloseIntrRuleDiff :: SignatureWithMaude -> String -> OpenDiffTheory -> OpenDiffTheory
+checkCloseIntrRuleDiff sign name diffthy = diffCLthy {_diffThyCacheRight = clACred}
+
+  where
+    hnd = sign._sigMaudeInfo
+
+    dcl = diffthy._diffThyDiffCacheLeft 
+    cl = diffthy._diffThyCacheLeft
+
+    dclAC = concat $ map (closeIntrRule hnd) dcl
+    clAC = concat $ map (closeIntrRule hnd) cl
+
+    tabTDCL = groupBy ((==) `on` getRuleName) $ sortOn getRuleName dclAC
+
+    chainReductionBool = (diffthy._diffThyOptions)._chainReductionCheck
+
+    dclACred = if chainReductionBool then prettyChainReduction sign name dclAC tabTDCL chainReductionBool else applyChainReduction sign dclAC tabTDCL chainReductionBool
+    diffDCLthy = diffthy {_diffThyDiffCacheLeft = dclACred} 
+
+    diffDCRthy = diffDCLthy {_diffThyDiffCacheRight = dclACred}  -- diffThyDiffCacheLeft and diffThyDiffCacheRight are same Intruder Rules
+
+    clACred = map (copyLimit dclACred) clAC
+    diffCLthy = diffDCRthy {_diffThyCacheLeft = clACred}  -- diffThyCacheLeft and diffThyCacheRight are same Intruder Rules
+
 -- | Perform wellformedness and deducability checks on a theory.
 checkTranslatedTheory ::
   (MonadIO m, MonadError TheoryLoadError m) =>
@@ -464,11 +518,15 @@ checkTranslatedTheory thyOpts sign thy = do
           (`checkWellformednessDiff` sign)
           thy
 
-  let deducThy =
-        bimap
-          addMessageDeductionRuleVariants
-          addMessageDeductionRuleVariantsDiff
-          thy
+  deducThy0 <- bitraverse (\x -> return ((addMessageDeductionRuleVariants x) `runReader` (mh)))
+                          (\x -> return ((addMessageDeductionRuleVariantsDiff x) `runReader` (mh))) thy
+ 
+  deducThy <- bitraverse (liftIO . evaluate . force . (checkCloseIntrRule sign (theoryName thy))) (liftIO . evaluate . force . (checkCloseIntrRuleDiff sign (theoryName thy))) deducThy0
+--  let deducThy =
+--        bimap
+--          addMessageDeductionRuleVariants
+--          addMessageDeductionRuleVariantsDiff
+--          thy
 
   variableReport <- case compare derivChecks 0 of
     EQ -> pure $ Just []
@@ -493,6 +551,7 @@ checkTranslatedTheory thyOpts sign thy = do
 
   pure (report, deducThy)
   where
+    mh = sign._sigMaudeInfo
     incompleteMSRs = False -- TODO how do we know if we do not have all MSRs due to translation?
     autoSources = thyOpts.autoSources
     derivChecks = thyOpts.derivationChecks
@@ -512,13 +571,16 @@ checkTranslatedTheory thyOpts sign thy = do
       Signature $
         s._sigMaudeInfo
           { stFunSyms = makepublic (stFunSyms s._sigMaudeInfo)
+          , stACFunSyms = makepublicAC (stACFunSyms s._sigMaudeInfo)
           , funSyms = makepublicsym (funSyms s._sigMaudeInfo)
           , irreducibleFunSyms = makepublicsym (irreducibleFunSyms s._sigMaudeInfo)
           , reducibleFunSyms = makepublicsym (reducibleFunSyms s._sigMaudeInfo)
           }
     makepublic = Data.Set.map (\(name, (int, _, construct)) -> (name, (int, Public, construct)))
-    makepublicsym = Data.Set.map $ \case
-      NoEq (name, (int, _, constr)) -> NoEq (name, (int, Public, constr))
+    makepublicAC = Data.Set.map (\(name, (_, construct)) -> (name,(Public, construct)))
+    makepublicsym  = Data.Set.map $ \case
+      NoEq (name, (int, _, constr)) -> NoEq (name,(int, Public, constr))
+      AC (ACfct (name, (_, constr))) -> AC (ACfct (name,(Public, constr)))
       x -> x
 
     theoryName = either (._thyName) (._diffThyName)
@@ -761,7 +823,7 @@ mkBpIntruderVariants msig =
 -- | Add the variants of the message deduction rule. Uses built-in cached
 -- files for the variants of the message deduction rules for Diffie-Hellman
 -- exponentiation and Bilinear-Pairing.
-addMessageDeductionRuleVariants :: OpenTranslatedTheory -> OpenTranslatedTheory
+addMessageDeductionRuleVariants :: OpenTranslatedTheory -> WithMaude OpenTranslatedTheory
 addMessageDeductionRuleVariants thy0
   | enableBP msig =
       addIntruderVariants
@@ -771,20 +833,36 @@ addMessageDeductionRuleVariants thy0
   | enableDH msig = addIntruderVariants [mkDhIntruderVariants]
   | otherwise = thy
   where
-    msig = thy0._thySignature._sigMaudeInfo
-    rules =
-      subtermIntruderRules False msig
-        ++ specialIntruderRules False
-        ++ (if enableNat msig then natIntruderRules else [])
-        ++ (if enableMSet msig then multisetIntruderRules else [])
-        ++ (if enableXor msig then xorIntruderRules else [])
-    thy = addIntrRuleACsAfterTranslate rules thy0
+    msig = thy0._thySignature._sigMaudeInfo --get (sigpMaudeSig . thySignature) thy0
+    rules0 = reader $ \hnd -> subtermIntruderRules False hnd msig ++ specialIntruderRules False
+                   ++ (if enableMSet msig then multisetIntruderRules else [])
+                   ++ (if enableXor msig then xorIntruderRules else [])
+    rulesAC = (destructionRulesAC False (acUserFunSyms msig))
+    rulesNoEq = (destructionRulesNoEq False (noEqFunSyms msig))
+    rulesACNoEq = liftA2 (++) rulesAC rulesNoEq
+    rules = liftA2 (++) rules0 rulesACNoEq
+    thy = rules >>= \x -> return (addIntrRuleACsAfterTranslate x thy0)
+    addIntruderVariants mkRuless = thy >>= \x -> return (addIntrRuleACsAfterTranslate (concatMap ($ msig) mkRuless) x)
+
+-- FIX-ME : this function exists only for compilation of testParseFile in ParserTests.hs, it don't contain destruction rules for AC user defined function symbol nor subterm intruder rules
+addMessageDeductionRuleVariantsWithoutMaude :: OpenTranslatedTheory -> OpenTranslatedTheory
+addMessageDeductionRuleVariantsWithoutMaude thy0
+  | enableBP msig = addIntruderVariants [ mkDhIntruderVariants
+                                        , mkBpIntruderVariants ]
+  | enableDH msig = addIntruderVariants [ mkDhIntruderVariants ]
+  | otherwise     = thy
+  where
+    msig         = thy0._thySignature._sigMaudeInfo
+    rules        = specialIntruderRules False -- subtermIntruderRules False hnd msig ++ 
+                   ++ (if enableMSet msig then multisetIntruderRules else [])
+                   ++ (if enableXor msig then xorIntruderRules else [])
+    thy          = addIntrRuleACsAfterTranslate rules thy0
     addIntruderVariants mkRuless = addIntrRuleACsAfterTranslate (concatMap ($ msig) mkRuless) thy
 
 -- | Add the variants of the message deduction rule. Uses the cached version
 -- of the @"intruder_variants_dh.spthy"@ file for the variants of the message
 -- deduction rules for Diffie-Hellman exponentiation.
-addMessageDeductionRuleVariantsDiff :: OpenDiffTheory -> OpenDiffTheory
+addMessageDeductionRuleVariantsDiff :: OpenDiffTheory -> WithMaude OpenDiffTheory
 addMessageDeductionRuleVariantsDiff thy0
   | enableBP msig =
       addIntruderVariantsDiff
@@ -792,18 +870,21 @@ addMessageDeductionRuleVariantsDiff thy0
           mkBpIntruderVariants
         ]
   | enableDH msig = addIntruderVariantsDiff [mkDhIntruderVariants]
-  | otherwise = addIntrRuleLabels thy
+  | otherwise = thy >>= \x -> return (addIntrRuleLabels x)
   where
     msig = thy0._diffThySignature._sigMaudeInfo
-    rules diff' =
-      subtermIntruderRules diff' msig
+    rules0 diff' = reader $ \hnd -> subtermIntruderRules diff' hnd msig
         ++ specialIntruderRules diff'
         ++ (if enableNat msig then natIntruderRules else [])
         ++ (if enableMSet msig then multisetIntruderRules else [])
         ++ (if enableXor msig then xorIntruderRules else [])
-    thy = addIntrRuleACsDiffBoth (rules False) $ addIntrRuleACsDiffBothDiff (rules True) thy0
-    addIntruderVariantsDiff mkRuless =
-      addIntrRuleLabels $
-        addIntrRuleACsDiffBothDiff
-          (concatMap ($ msig) mkRuless)
-          (addIntrRuleACsDiffBoth (concatMap ($ msig) mkRuless) thy)
+    rulesAC diff' = (destructionRulesAC diff' (acUserFunSyms msig))
+    rulesNoEq diff' = (destructionRulesNoEq diff' (noEqFunSyms msig))
+    rulesACNoEq diff' = liftA2 (++) (rulesAC diff') (rulesNoEq diff')
+    rules diff' = liftA2 (++) (rules0 diff') (rulesACNoEq diff')
+    bothDiffTh = rules True >>= \x -> return (addIntrRuleACsDiffBothDiff x thy0)
+    thy = rules False >>= (\x -> (bothDiffTh >>= (return . addIntrRuleACsDiffBoth x)))
+    addIntruderVariantsDiff mkRuless = thy >>= (\x -> return 
+      (addIntrRuleLabels $ 
+        addIntrRuleACsDiffBothDiff (concatMap ($ msig) mkRuless) 
+        (addIntrRuleACsDiffBoth (concatMap ($ msig) mkRuless) x)))

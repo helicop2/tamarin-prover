@@ -70,6 +70,9 @@ module Theory.Model.Formula (
   , prettyLNFormula
   , prettySyntacticLNFormula
 
+  , existFormula
+  , forAllFormula
+
   ) where
 
 import           Prelude                          hiding (negate)
@@ -509,3 +512,15 @@ prettySyntacticLNFormula :: HighlightDocument d => SyntacticLNFormula -> d
 prettySyntacticLNFormula fm =
     Precise.evalFresh (prettyLFormula prettySyntacticNAtom fm) (avoidPrecise fm)
 
+
+------------------------------------------------------------------------------
+-- Generate Formula
+------------------------------------------------------------------------------
+
+-- Exists-quantifies every non-time LVar of a formula
+existFormula ::  ProtoFormula Unit2 (String,LSort) Name LVar -> ProtoFormula Unit2 (String,LSort) Name LVar
+existFormula fm = foldl (\ formula var -> exists (lvarName var, lvarSort var) var formula) fm (frees fm)
+
+-- Exists-quantifies every non-time LVar of a formula
+forAllFormula ::  ProtoFormula Unit2 (String,LSort) Name LVar -> ProtoFormula Unit2 (String,LSort) Name LVar
+forAllFormula fm = foldl (\ formula var -> forAll (lvarName var, lvarSort var) var formula) fm (frees fm)

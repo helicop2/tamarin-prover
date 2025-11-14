@@ -66,11 +66,15 @@ module Term.Unification (
   , hashMaudeSig
   , rrulesForMaudeSig
   , stFunSyms
+  , stACFunSyms
   , funSyms
   , stRules
   , irreducibleFunSyms
   , reducibleFunSyms
   , noEqFunSyms
+  , acUserFunSyms
+  , userDefineFunSyms
+  , userDefineSTFunSyms
   , addFunSym
   , addCtxtStRule
 

@@ -22,7 +22,7 @@ module Theory.Constraint.Solver.Goals (
   , plainOpenGoals
   ) where
 
--- import           Debug.Trace
+import           Debug.Trace
 
 import           Prelude                                 hiding (id, (.))
 
@@ -32,6 +32,8 @@ import qualified Data.DAG.Simple                         as D (reachableSet)
 import qualified Data.Map                                as M
 import qualified Data.Monoid                             as Mono
 import qualified Data.Set                                as S
+import           Data.List
+import           Data.Maybe
 
 import           Control.Basics
 import           Control.Category
@@ -63,8 +65,8 @@ import           Utils.Misc                              (twoPartitions)
 
 -- | The list of goals that must be solved before a solution can be extracted.
 -- Each goal is annotated with its age and an indicator for its usefulness.
-openGoals :: System -> [AnnotatedGoal]
-openGoals sys = do
+openGoals :: ProofContext -> System -> [AnnotatedGoal]
+openGoals ctxt sys = do
     (goal, status) <- M.toList $ get sGoals sys
     let solved = get gsSolved status
     -- check whether the goal is still open
@@ -72,13 +74,14 @@ openGoals sys = do
         ActionG i (kFactView -> Just (UpK, m)) ->
           if get sDiffSystem sys
              -- In a diff proof, all action goals need to be solved.
-             then not (solved)
+             then not (solved) -- FIXME : || isTrivialACFunSymTerm m ?
              else
                not $    solved
                     -- message variables are not solved, except if the node already exists in the system -> facilitates finding contradictions
                     || (isMsgVar m && Nothing == M.lookup i (get sNodes sys))
                     || sortOfLNTerm m == LSortPub
                     || sortOfLNTerm m == LSortNat
+                    || isTrivialACFunSymTerm m -- do not solve actions that consist of an AC symbol where all arguments are simple msg variables, important for soundness
                     -- handled by 'insertAction'
                     || isPair m || isInverse m || isProduct m --- || isXor m
                     || isUnion m || isNullaryPublicFunction m
@@ -222,29 +225,20 @@ solveAction rules (i, fa@(Fact _ ann _)) = do
     mayRu <- M.lookup i <$> getM sNodes
     showRuleCaseName <$> case mayRu of
         Nothing -> case fa of
-            (Fact KUFact _ [m@(viewTerm2 -> FXor ts)]) -> do
-                   partitions <- disjunctionOfList $ twoPartitions ts
-                   case partitions of
-                       (_, []) -> do
-                            let ru = Rule (IntrInfo CoerceRule) [kdFact m] [fa] [fa] []
-                            modM sNodes (M.insert i ru)
-                            insertGoal (PremiseG (i, PremIdx 0) (kdFact m)) False
-                            return ru
-                       (a',  b') -> do
-                            let a = fAppAC Xor a'
-                            let b = fAppAC Xor b'
-                            let ru = Rule (IntrInfo (ConstrRule $ BC.pack "_xor")) [(kuFact a),(kuFact b)] [fa] [fa] []
-                            modM sNodes (M.insert i ru)
-                            mapM_ requiresKU [a, b] *> return ru
-            _                                        -> do
+            (Fact KUFact _ [m@(FAPP (AC o) ts)]) -> do
+                   ru  <- labelNodeId i (annotatePrems <$> rules) Nothing
+                   let prems = map getKUVars $ get rPrems ru
+                   act <- disjunctionOfList $ get rActs ru
+                   void (solveFactEqs SplitNow (ACConstructor (head prems) (prems!!1)) [Equal fa act])
+                   return ru
+            _                                    -> do
                    ru  <- labelNodeId i (annotatePrems <$> rules) Nothing
                    act <- disjunctionOfList $ get rActs ru
-                   void (solveFactEqs SplitNow [Equal fa act])
+                   void (solveFactEqs SplitNow OtherRule [Equal fa act])
                    return ru
-
         Just ru -> do unless (fa `elem` get rActs ru) $ do
                           act <- disjunctionOfList $ get rActs ru
-                          void (solveFactEqs SplitNow [Equal fa act])
+                          void (solveFactEqs SplitNow OtherRule [Equal fa act])
                       return ru
   where
     -- If the fact in the action goal has annotations, then consider annotated
@@ -254,11 +248,11 @@ solveAction rules (i, fa@(Fact _ ann _)) = do
         if not (S.null ann) && isIntruderRule ru then
             Rule ri (annotateFact ann <$> ps) cs (annotateFact ann <$> as) nvs
             else ru
-    requiresKU t = do
-        j <- freshLVar "vk" LSortNode
-        let faKU = kuFact t
-        insertLess (LessAtom j i Adversary)
-        void (insertAction j faKU)
+    
+    getKUVars (Fact KUFact _ [m]) = case viewTerm m of
+                                      (Lit  (Var v)) -> v
+                                      _              -> error "getKUVars: should be impossible"
+    getKUVars _                   = error "getKUVars: should be impossible"
 
 -- | CR-rules *DG_{2,P}* and *DG_{2,d}*: solve a premise with a direct edge
 -- from a unifying conclusion or using a destruction chain.

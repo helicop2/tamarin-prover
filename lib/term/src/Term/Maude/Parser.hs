@@ -73,13 +73,15 @@ funSymPrefix :: ByteString
 funSymPrefix = "tam"
 
 -- | Encode attributes in additional prefix
-funSymEncodeAttr :: Privacy -> Constructability -> ByteString
-funSymEncodeAttr priv constr  = f priv <> g constr
+funSymEncodeAttr :: Privacy -> Constructability -> ACstate -> ByteString
+funSymEncodeAttr priv constr acstate = f priv <> g constr <> h acstate
     where
         f Private = "P"
         f Public  = "X"
         g Constructor = "C"
         g Destructor = "D"
+        h IsAC = "A"
+        h NotAC = "F"
 
 -- | Decode string @funSymPrefix || funSymEncodeAttr p c || ident@ into
 --   @(ident,p,c)@
@@ -87,14 +89,14 @@ funSymDecode :: ByteString -> (ByteString, Privacy, Constructability)
 funSymDecode s = (ident,priv,constr)
     where
         prefixLen      = BC.length funSymPrefix
-        (eAttr,ident)  = BC.splitAt 2 (BC.drop prefixLen s) 
+        (eAttr,ident)  = BC.splitAt 3 (BC.drop prefixLen s)
         (priv,constr)  = case eAttr of
-                            "PD" -> (Private,Destructor)
-                            "PC" -> (Private,Constructor)
-                            "XD" -> (Public,Destructor)
+                            eAttr | eAttr `elem` ["PDA","PDF"]-> (Private,Destructor)
+                            eAttr | eAttr `elem` ["PCA","PCF"]-> (Private,Constructor)
+                            eAttr | eAttr `elem` ["XDA","XDF"]-> (Public,Destructor)
                             _    -> (Public,Constructor)
 
-         
+
 
 -- | Replace underscores "_" with minus "-" for Maude.
 replaceUnderscore :: ByteString -> ByteString
@@ -118,19 +120,23 @@ replaceMinus s = BC.map f s
 replaceMinusFun :: NoEqSym -> NoEqSym
 replaceMinusFun (s, p) = (replaceMinus s, p)
 
+replaceMinusFunAC :: ACfctSym -> ACfctSym
+replaceMinusFunAC (s, p) = (replaceMinus s, p)
+
 
 -- | Pretty print an AC symbol for Maude.
 ppMaudeACSym :: ACSym -> ByteString
 ppMaudeACSym o =
     funSymPrefix <> case o of
-                      Mult    -> multSymString 
-                      Union   -> munSymString
-                      Xor     -> xorSymString
-                      NatPlus -> natPlusSymString
+                      Mult                    -> multSymString
+                      Union                   -> munSymString
+                      Xor                     -> xorSymString
+                      NatPlus                 -> natPlusSymString
+                      ACfct (f,(prv,cnstr))   -> funSymEncodeAttr prv cnstr IsAC <> replaceUnderscore f
 
 -- | Pretty print a non-AC symbol for Maude.
 ppMaudeNoEqSym :: NoEqSym -> ByteString
-ppMaudeNoEqSym (o,(_,prv,cnstr))  = funSymPrefix <> funSymEncodeAttr prv cnstr <> replaceUnderscore o
+ppMaudeNoEqSym (o,(_,prv,cnstr))  = funSymPrefix <> funSymEncodeAttr prv cnstr NotAC <> replaceUnderscore o
 
 -- | Pretty print a C symbol for Maude.
 ppMaudeCSym :: CSym -> ByteString
@@ -140,14 +146,14 @@ ppMaudeCSym EMap = funSymPrefix <> emapSymString
 -- | @ppMaude t@ pretty prints the term @t@ for Maude.
 ppMaude :: Term MaudeLit -> ByteString
 ppMaude t = case viewTerm t of
-    Lit (MaudeVar i lsort)   -> "x" <> ppInt i <> ":" <> ppLSort lsort
-    Lit (MaudeConst i lsort) -> ppLSortSym lsort <> "(" <> ppInt i <> ")"
-    Lit (FreshVar _ _)       -> error "Term.Maude.Types.ppMaude: FreshVar not allowed"
-    FApp (NoEq fsym) []      -> ppMaudeNoEqSym fsym
-    FApp (NoEq fsym) as      -> ppMaudeNoEqSym fsym <> ppArgs as
-    FApp (C fsym) as         -> ppMaudeCSym fsym    <> ppArgs as
-    FApp (AC op) as          -> ppMaudeACSym op     <> ppArgs as
-    FApp List as             -> "list(" <> ppList as <> ")"
+    Lit (MaudeVar i lsort)    -> "x" <> ppInt i <> ":" <> ppLSort lsort
+    Lit (MaudeConst i lsort)  -> ppLSortSym lsort <> "(" <> ppInt i <> ")"
+    Lit (FreshVar _ _)        -> error "Term.Maude.Types.ppMaude: FreshVar not allowed"
+    FApp (NoEq fsym) []       -> ppMaudeNoEqSym fsym
+    FApp (NoEq fsym) as       -> ppMaudeNoEqSym fsym <> ppArgs as
+    FApp (C fsym) as          -> ppMaudeCSym fsym    <> ppArgs as
+    FApp (AC op) as           -> ppMaudeACSym op     <> ppArgs as
+    FApp List as              -> "list(" <> ppList as <> ")"
   where
     ppArgs as     = "(" <> (B.intercalate "," (map ppMaude as)) <> ")"
     ppInt         = BC.pack . show
@@ -206,7 +212,7 @@ ppTheory msig = BC.unlines $
     (if enableDH msig
        then
        [ theoryOpEq "one : -> Msg"
-       , theoryOpEq "DH-neutral  : -> Msg"       
+       , theoryOpEq "DH-neutral  : -> Msg"
        , theoryOpEq "exp : Msg Msg -> Msg"
        , theoryOpAC "mult : Msg Msg -> Msg [comm assoc]"
        , theoryOpEq "inv : Msg -> Msg" ]
@@ -223,7 +229,7 @@ ppTheory msig = BC.unlines $
        [ theoryOpEq "zero : -> Msg"
        , theoryOpAC "xor : Msg Msg -> Msg [comm assoc]" ]
        else [])
-    ++    
+    ++
     (if enableNat msig
        then
        [ theoryOpEq "tone : -> TamNat"
@@ -232,19 +238,25 @@ ppTheory msig = BC.unlines $
     ++
     map theoryFunSym (S.toList $ stFunSyms msig)
     ++
+    map theoryACFunSym (S.toList $ stACFunSyms msig)
+    ++
     map theoryRule (S.toList $ rrulesForMaudeSig msig)
     ++
     [ "endfm" ]
   where
-    maybeEncode (Just (priv,cnstr)) = funSymEncodeAttr priv cnstr
+    maybeEncode (Just (priv,cnstr,acstate)) = funSymEncodeAttr priv cnstr acstate
     maybeEncode Nothing             = ""
     theoryOp attr fsort =
         "  op " <> funSymPrefix <> maybeEncode attr <> fsort <>" ."
-    theoryOpEq = theoryOp (Just (Public,Constructor))
+    theoryOpACUser attr fsort =
+        "  op " <> funSymPrefix <> maybeEncode attr <> fsort <>" ."
+    theoryOpEq = theoryOp (Just (Public,Constructor,NotAC))
     theoryOpAC = theoryOp Nothing
     theoryOpC  = theoryOp Nothing
     theoryFunSym (s,(ar,priv,cnstr)) =
-        theoryOp  (Just(priv,cnstr)) (replaceUnderscore s <> " : " <> (B.concat $ replicate ar "Msg ") <> " -> Msg")
+        theoryOp  (Just (priv,cnstr,NotAC)) (replaceUnderscore s <> " : " <> (B.concat $ replicate ar "Msg ") <> " -> Msg")
+    theoryACFunSym (s,(priv,cnstr)) =
+        theoryOpACUser  (Just (priv,cnstr,IsAC)) (replaceUnderscore s <> " : " <> (B.concat $ replicate 2 "Msg ") <> "-> Msg" <> " [comm assoc]")
     theoryRule (l `RRule` r) =
         "  eq " <> ppMaude lm <> " = " <> ppMaude rm <> " [variant] ."
       where (lm,rm) = evalBindT ((,) <$>  lTermToMTerm' l <*> lTermToMTerm' r) noBindings
@@ -291,7 +303,7 @@ parseSubstitution msig = do
     endOfLine *> choice [string "Solution ", string "Unifier ", string "Matcher "] *> takeWhile1 isDigit *> endOfLine
     choice [ string "empty substitution" *> endOfLine *> pure []
            , many1 parseEntry]
-  where 
+  where
     parseEntry = (,) <$> (flip (,) <$> (string "x" *> decimal <* string ":") <*> parseSort)
                      <*> (string " --> " *> parseTerm msig <* endOfLine)
 
@@ -334,14 +346,18 @@ parseTerm msig = choice
           error $ "Maude.Parser.parseTerm: unknown function "
                   ++ "symbol `"++ show op ++"', not in "
                   ++ show allowedfunSyms
-      where 
+      where
             special             = ident `elem` ["list", "cons", "nil" ]
             (ident',priv,cnstr) = funSymDecode ident
-            op                  = if special then 
+            op                  = if special then
                                         (ident , (length args,Public,Constructor))
                                   else  (ident', (length args, priv, cnstr))
             allowedfunSyms = [consSym, nilSym, natOneSym]
-                ++ (map replaceUnderscoreFun $ S.toList $ noEqFunSyms msig)
+                ++ map replaceUnderscoreFun (S.toList $ noEqFunSyms msig)
+
+    parseFunACSym ident = replaceMinusFunAC (ident', (priv, cnstr))
+      where
+        (ident',priv,cnstr) = funSymDecode ident
 
     parseConst s = lit <$> (flip MaudeConst s <$> decimal) <* string ")"
 
@@ -352,6 +368,10 @@ parseTerm msig = choice
                        | ident == ppMaudeACSym Union      = fAppAC Union   args
                        | ident == ppMaudeACSym NatPlus    = fAppAC NatPlus args
                        | ident == ppMaudeACSym Xor        = fAppAC Xor   args
+                       | BC.isInfixOf "tamPDA" ident      = fAppACfct (parseFunACSym ident) args
+                       | BC.isInfixOf "tamPCA" ident      = fAppACfct (parseFunACSym ident) args
+                       | BC.isInfixOf "tamXDA" ident      = fAppACfct (parseFunACSym ident) args
+                       | BC.isInfixOf "tamXCA" ident      = fAppACfct (parseFunACSym ident) args
                        | ident == ppMaudeCSym  EMap       = fAppC  EMap  args
         appIdent [arg] | ident == "list"                  = fAppList (flattenCons arg)
         appIdent args                                     = fAppNoEq op args

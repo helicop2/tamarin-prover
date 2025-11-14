@@ -79,6 +79,7 @@ module Theory.Model.Rule (
   , isDestrRule
   , isIEqualityRule
   , isConstrRule
+  , isACConstrRule
   , isPubConstrRule
   , isNatConstrRule
   , isFreshRule
@@ -129,6 +130,8 @@ module Theory.Model.Rule (
   , unifyRuleACInstEqs
   , unifiableRuleACInsts
   , equalRuleUpToRenaming
+  , equalDuplicateRuleUpToRenaming
+  , equalSubsetRuleUpToRenaming
   , equalRuleUpToAnnotations
   , equalRuleUpToDiffAnnotation
   , equalRuleUpToDiffAnnotationSym
@@ -148,6 +151,7 @@ module Theory.Model.Rule (
   , prettyProtoRuleACasE
   , prettyIntrRuleAC
   , prettyIntrRuleACInfo
+  , prettyIntrRuleACWithLimit
   , prettyRuleAC
   , prettyLoopBreakers
   , prettyRuleACInst
@@ -194,8 +198,9 @@ import           Theory.Text.Pretty
 import           Theory.Sapic
 import Data.Char (chr, isDigit)
 import Data.List.Split (splitOn)
+import           Utils.Misc
 
--- import           Debug.Trace
+import Debug.Trace
 
 ------------------------------------------------------------------------------
 -- General Rule
@@ -690,6 +695,25 @@ isConstrRule ru = case ruleName ru of
   IntrInfo CoerceRule      -> True
   _                        -> False
 
+-- | Returns the name of the function (corresponding to showFunSymName) iff the rule is a construction rule for an AC symbol.
+-- FIXME: avoid strings here, use FunSym instead. requires annotating rules with FunSyms
+isACConstrRule :: HasRuleName r => r -> MaudeSig -> Maybe String
+isACConstrRule ru msig = case ruleName ru of
+  IntrInfo (ConstrRule name)  -> -- trace ("isACConstrRule: " ++ show name) $
+        if name == BC.pack "_xor" then
+          Just $ show Xor
+        else if name == BC.pack "_mult" then
+          Just $ show Mult
+        else if name == BC.pack "_union" then
+          Just $ show Union
+        else if name == BC.pack "_natplus" then
+          Just $ show NatPlus
+        -- if the name is one of the standard AC symbols, return the corresponding name
+        else 
+          (\(n, _) -> BC.unpack n) <$> find (\(f, _) -> f==BC.drop 1 name) (stACFunSyms msig)
+  _                           -> Nothing
+
+
 -- | True iff the rule is a construction rule.
 isPubConstrRule :: HasRuleName r => r -> Bool
 isPubConstrRule ru = case ruleName ru of
@@ -1076,6 +1100,44 @@ equalRuleUpToRenaming r1@(Rule rn1 pr1 co1 ac1 nvs1) r2@(Rule rn2 pr2 co2 ac2 nv
        matchFacts (Just l) (Fact f1 _ t1, Fact f2 _ t2) | f1 == f2  = Just ((zipWith Equal t1 t2)++l)
                                                     | otherwise = Nothing
 
+-- | Are these two rules equal up to renaming of variables?
+equalDuplicateRuleUpToRenaming :: (Show a, Eq a, HasFrees a) => Rule a -> Rule a -> WithMaude Bool
+equalDuplicateRuleUpToRenaming r1@(Rule _ pr1 co1 ac1 nvs1) r2 = reader $ \hnd ->
+  case eqs of
+       Nothing   -> False
+       Just eqs' -> (any isRenamingPerRule $ unifs eqs' hnd)
+    where
+       r2_rename@(Rule _ rpr2 rco2 rac2 rnvs2) = r2 `renameAvoiding` r1
+       isRenamingPerRule subst = isRenaming (restrictVFresh (vars r1) subst) && isRenaming (restrictVFresh (vars r2_rename) subst)
+       vars ru = map fst $ varOccurences ru
+       unifs eq hnd = unifyLNTerm eq `runReader` hnd
+       eqs = foldl matchFacts (Just $ zipWith Equal nvs1 rnvs2) $ zip (pr1++co1++ac1) (rpr2++rco2++rac2)
+       matchFacts Nothing  _                                    = Nothing
+       matchFacts (Just l) (Fact f1 _ t1, Fact f2 _ t2) | f1 == f2  = Just ((zipWith Equal t1 t2)++l)
+                                                    | otherwise = Nothing
+
+
+-- | Are the premisses of the first rule subset of those of the second rule up to renaming of variables?
+equalSubsetRuleUpToRenaming :: (Show a, Eq a, HasFrees a, Apply LNSubst a) => Rule a -> Rule a -> WithMaude Bool
+equalSubsetRuleUpToRenaming r1@(Rule _ _ co1 _ _) r2@(Rule _ _ co2 _ _) = reader $ \hnd ->
+  case unifyLNFactEqs [Equal (head co2) (head co1)] `runReader` hnd of
+      [] -> False
+      subst -> any (\x -> isRenamingPerRule x && premSubst x) subst
+    where
+      isRenamingPerRule sub = isRenaming (restrictVFresh (vars r1) sub) && isRenaming (restrictVFresh (vars r2) sub)
+      vars ru = map fst $ varOccurences ru
+
+      premSubst :: LNSubstVFresh -> Bool
+      premSubst sub = srpr2 `subsetOf` spr1
+
+        where
+          (Rule _ spr1 _ _ _,Rule _ srpr2 _ _ _) = evalFreshAvoiding (appSubst sub r1 r2) (r1, r2)
+
+          appSubst x inst0 inst1 = do
+            s <- freshToFree x
+            let (instt0,instt1) = apply s (inst0,inst1)
+            return (instt0,instt1)
+
 -- | Are these two rule instances equal up to added annotations in @ac2@?
 equalRuleUpToAnnotations :: (Eq a) => Rule a -> Rule a -> Bool
 equalRuleUpToAnnotations (Rule rn1 pr1 co1 ac1 nvs1) (Rule rn2 pr2 co2 ac2 nvs2) =
@@ -1322,6 +1384,10 @@ prettyProtoRuleACasE =
 
 prettyIntrRuleAC :: HighlightDocument d => IntrRuleAC -> d
 prettyIntrRuleAC = prettyNamedRule (kwRuleModulo "AC") (const emptyDoc)
+
+prettyIntrRuleACWithLimit :: HighlightDocument d => IntrRuleAC -> d
+prettyIntrRuleACWithLimit r@(Rule (DestrRule _ i _ _) _ _ _ _) = vcat [prettyNamedRule (kwRuleModulo "AC") (const emptyDoc) r, text ("Remaining consecutive applications : " ++ show i ++ "\n")]
+prettyIntrRuleACWithLimit r = prettyNamedRule (kwRuleModulo "AC") (const emptyDoc) r
 
 prettyProtoRuleAC :: HighlightDocument d => ProtoRuleAC -> d
 prettyProtoRuleAC = prettyNamedRule (kwRuleModulo "AC") prettyProtoRuleACInfo

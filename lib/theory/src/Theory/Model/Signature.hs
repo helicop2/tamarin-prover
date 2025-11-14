@@ -32,6 +32,7 @@ module Theory.Model.Signature
 
     -- ** Pretty-printing
     prettySignaturePure,
+    prettySignaturePureExcept,
     prettySignatureWithMaude,
   )
 where
@@ -163,6 +164,13 @@ instance NFData SignatureWithMaude where
 prettySignaturePure :: (HighlightDocument d) => SignaturePure -> d
 prettySignaturePure sig =
   prettyMaudeSig $ L.get sigpMaudeSig sig
+    
+-- | Pretty-print a pure signature, but omit given set of
+--   NoEqSym function symbols. Used for pretty-printing OpenTheories
+--   with typed function declarations
+prettySignaturePureExcept :: HighlightDocument d => S.Set UserDefineSym -> SignaturePure -> d
+prettySignaturePureExcept exc sig  =
+  prettyMaudeSigExcept (L.get sigpMaudeSig sig) exc
 
 -- | Pretty-print a signature with maude.
 prettySignatureWithMaude :: (HighlightDocument d) => SignatureWithMaude -> d
