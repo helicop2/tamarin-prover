@@ -11,7 +11,16 @@ ifdef FAST
 endif
 # Default installation via stack, multi-threaded
 # Try to install Tamarin
-default: tamarin
+default: fvpgenbib tamarin
+
+# =============================================================================
+# FVPgenbib - OCaml library for Finite Variant Property
+# =============================================================================
+.PHONY: fvpgenbib
+fvpgenbib:
+	@echo "[Build] Compiling fvpgenbib OCaml library..."
+	cd lib/fvpgenbib && $(MAKE) libfvp.so
+	@echo "[Build] fvpgenbib compiled."
 
 # Default Tamarin installation via stack, multi-threaded
 .PHONY: tamarin

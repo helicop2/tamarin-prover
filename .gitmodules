@@ -1,0 +1,3 @@
+[submodule "lib/fvpgenbib"]
+	path = lib/fvpgenbib
+	url = git@github.com:helicop2/fvpgen_lib.git
