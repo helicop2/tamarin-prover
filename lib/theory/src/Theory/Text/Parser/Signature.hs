@@ -175,7 +175,7 @@ equations = do
         return True)
     unless convergent $ symbol "equations" *> colon
     eqs <- commaSep1 equation
-    modifyStateSig (\sig -> foldl (flip addCtxtStRule) sig eqs)
+    modifyStateSig (\sig -> foldl (flip addCtxtStRule) sig eqs) -- à remplacer par les règles de RVPResult.
     modifyState (\st -> st { sig = (sig st) { eqConvergent = convergent } })  -- Explicit state update
     return ()
   where
