@@ -13,5 +13,11 @@ import Main.Mode.Test        (testMode)
 import Main.Mode.Interactive (interactiveMode)
 import Main.Mode.Intruder    (intruderMode)
 
+-- FVPgen initialization
+import qualified Theory.Tools.CheckFiniteVariantProperty as FVP
+
 main :: IO ()
-main = defaultMain batchMode [interactiveMode, intruderMode, testMode]
+main = do
+  -- Initialize FVPgen library before anything else
+  FVP.initFVPgen
+  defaultMain batchMode [interactiveMode, intruderMode, testMode]

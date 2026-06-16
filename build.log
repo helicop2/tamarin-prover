@@ -1,0 +1,225 @@
+[Build] Compiling fvpgenbib OCaml library...
+cd lib/fvpgenbib && make libfvp.so
+make[1] : on entre dans le répertoire « /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/fvpgenbib »
+[OCaml] Generation des lexers et parsers...
+cd src && ocamlyacc -v maude_parser.mly
+cd src && ocamllex maude_lexer.mll
+257 states, 9349 transitions, table size 38938 bytes
+cd src && ocamlyacc -v input_parser.mly
+cd src && ocamllex input_lexer.mll
+111 states, 1320 transitions, table size 5946 bytes
+[OCaml] Lexers et parsers generes.
+[OCaml] Compilation des modules...
+cd src && ocamlopt -I +unix -c statistic.mli
+cd src && ocamlopt -I +unix -c statistic.ml
+cd src && ocamlopt -I +unix -c utils.mli
+cd src && ocamlopt -I +unix -c utils.ml
+cd src && ocamlopt -I +unix -c term.ml
+cd src && ocamlopt -I +unix -c input_function.ml
+cd src && ocamlopt -I +unix -c input_parser.mli
+cd src && ocamlopt -I +unix -c input_parser.ml
+cd src && ocamlopt -I +unix -c input_lexer.ml
+cd src && ocamlopt -I +unix -c maude_function.ml
+cd src && ocamlopt -I +unix -c maude_parser.mli
+cd src && ocamlopt -I +unix -c maude_parser.ml
+cd src && ocamlopt -I +unix -c maude_lexer.ml
+cd src && ocamlopt -I +unix -c pvqueue.mli
+cd src && ocamlopt -I +unix -c pvqueue.ml
+cd src && ocamlopt -I +unix -c flattened.ml
+cd src && ocamlopt -I +unix -c rule_queue.mli
+cd src && ocamlopt -I +unix -c rule_queue.ml
+cd src && ocamlopt -I +unix -c AC.mli
+cd src && ocamlopt -I +unix -c AC.ml
+cd src && ocamlopt -I +unix -c order.mli
+cd src && ocamlopt -I +unix -c order.ml
+cd src && ocamlopt -I +unix -c rewrite_rule.ml
+File "_none_", line 1:
+Alert ocaml_deprecated_auto_include: 
+OCaml's lib directory layout changed in 5.0. The str subdirectory has been
+automatically added to the search path, but you should add -I +str to the
+command-line to silence this alert (e.g. by adding str to the list of
+libraries in your dune file, or adding use_str to your _tags file for
+ocamlbuild, or using -package str for ocamlfind).
+
+File "rewrite_rule.ml", line 1398, characters 8-16:
+1398 |     let var_name = String.sub s 0 end_pos in
+               ^^^^^^^^
+Warning 26 [unused-var]: unused variable var_name.
+[OCaml] Modules compiles.
+[Link] Creation de la bibliotheque libfvp.so...
+ocamlopt -output-complete-obj -runtime-variant _pic -o libfvp.so \
+	unix.cmxa str.cmxa \
+	src/statistic.cmx src/utils.cmx src/term.cmx src/input_function.cmx \
+	src/input_parser.cmx src/input_lexer.cmx src/maude_function.cmx \
+	src/maude_parser.cmx src/maude_lexer.cmx src/pvqueue.cmx \
+	src/flattened.cmx src/rule_queue.cmx src/AC.cmx src/order.cmx \
+	src/rewrite_rule.cmx \
+	bridge/cJSON.o bridge/bridge.o
+File "_none_", line 1:
+Alert ocaml_deprecated_auto_include: 
+OCaml's lib directory layout changed in 5.0. The unix subdirectory has been
+automatically added to the search path, but you should add -I +unix to the
+command-line to silence this alert (e.g. by adding unix to the list of
+libraries in your dune file, or adding use_unix to your _tags file for
+ocamlbuild, or using -package unix for ocamlfind).
+
+File "_none_", line 1:
+Alert ocaml_deprecated_auto_include: 
+OCaml's lib directory layout changed in 5.0. The str subdirectory has been
+automatically added to the search path, but you should add -I +str to the
+command-line to silence this alert (e.g. by adding str to the list of
+libraries in your dune file, or adding use_str to your _tags file for
+ocamlbuild, or using -package str for ocamlfind).
+[Link] Bibliotheque libfvp.so creee.
+make[1] : on quitte le répertoire « /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/fvpgenbib »
+[Build] fvpgenbib compiled.
+stack setup
+Stack will use the GHC on your PATH. For more information on paths, see stack path and stack exec
+env. To use this GHC and packages outside of a project, consider using: stack ghc, stack ghci, stack
+runghc, or stack exec.
+stack install
+Cabal file warning in /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/theory/tamarin-prover-theory.cabal@166:3: The field "default-extensions" is available only since the Cabal specification version 1.10. This field will be ignored.
+tamarin-prover-accountability-1.11.0: unregistering (missing dependencies: tamarin-prover-theory)
+tamarin-prover-export-1.11.0: unregistering (missing dependencies: tamarin-prover-sapic,
+tamarin-prover-theory)
+tamarin-prover-sapic-1.11.0: unregistering (missing dependencies: tamarin-prover-theory)
+tamarin-prover-theory-1.11.0: unregistering (local file changes: src/Theory/Text/Parser/Signature.hs
+src/Theory/Tools/CheckFiniteVariantProperty.hs)
+tamarin-prover-theory        > build (lib) with ghc-9.6.6
+tamarin-prover-theory        > Preprocessing library for tamarin-prover-theory-1.11.0..
+tamarin-prover-theory        > Building library for tamarin-prover-theory-1.11.0..
+tamarin-prover-theory        > [26 of 82] Compiling Theory.Tools.CheckFiniteVariantProperty [Source file changed]
+tamarin-prover-theory        > 
+tamarin-prover-theory        > /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/theory/src/Theory/Tools/CheckFiniteVariantProperty.hs:324:50: error: [GHC-83865]
+tamarin-prover-theory        >     • Couldn't match type ‘ByteString’ with ‘[Char]’
+tamarin-prover-theory        >       Expected: String
+tamarin-prover-theory        >         Actual: ByteString
+tamarin-prover-theory        >     • In the second argument of ‘(<>)’, namely ‘lhsBS’
+tamarin-prover-theory        >       In the expression: "result Msg: " <> lhsBS
+tamarin-prover-theory        >       In an equation for ‘lhsInput’: lhsInput = "result Msg: " <> lhsBS
+tamarin-prover-theory        >     |
+tamarin-prover-theory        > 324 |                 let lhsInput = "result Msg: " <> lhsBS
+tamarin-prover-theory        >     |                                                  ^^^^^
+tamarin-prover-theory        > 
+tamarin-prover-theory        > /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/theory/src/Theory/Tools/CheckFiniteVariantProperty.hs:325:50: error: [GHC-83865]
+tamarin-prover-theory        >     • Couldn't match type ‘ByteString’ with ‘[Char]’
+tamarin-prover-theory        >       Expected: String
+tamarin-prover-theory        >         Actual: ByteString
+tamarin-prover-theory        >     • In the second argument of ‘(<>)’, namely ‘rhsBS’
+tamarin-prover-theory        >       In the expression: "result Msg: " <> rhsBS
+tamarin-prover-theory        >       In an equation for ‘rhsInput’: rhsInput = "result Msg: " <> rhsBS
+tamarin-prover-theory        >     |
+tamarin-prover-theory        > 325 |                 let rhsInput = "result Msg: " <> rhsBS
+tamarin-prover-theory        >     |                                                  ^^^^^
+tamarin-prover-theory        > 
+tamarin-prover-theory        > /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/theory/src/Theory/Tools/CheckFiniteVariantProperty.hs:327:55: error: [GHC-83865]
+tamarin-prover-theory        >     • Couldn't match type ‘[Char]’ with ‘ByteString’
+tamarin-prover-theory        >       Expected: ByteString
+tamarin-prover-theory        >         Actual: String
+tamarin-prover-theory        >     • In the second argument of ‘parseReduceReply’, namely ‘lhsInput’
+tamarin-prover-theory        >       In a stmt of a 'do' block:
+tamarin-prover-theory        >         lhsMTerm <- parseReduceReply maudeSig lhsInput
+tamarin-prover-theory        >       In the expression:
+tamarin-prover-theory        >         do let lhsBS = BC.pack (dropWhile (...) lhsStr)
+tamarin-prover-theory        >            let rhsBS = BC.pack (dropWhile (...) rhsStr)
+tamarin-prover-theory        >            let lhsInput = "result Msg: " <> lhsBS
+tamarin-prover-theory        >            let rhsInput = "result Msg: " <> rhsBS
+tamarin-prover-theory        >            ....
+tamarin-prover-theory        >     |
+tamarin-prover-theory        > 327 |                 lhsMTerm <- parseReduceReply maudeSig lhsInput
+tamarin-prover-theory        >     |                                                       ^^^^^^^^
+tamarin-prover-theory        > 
+tamarin-prover-theory        > /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/theory/src/Theory/Tools/CheckFiniteVariantProperty.hs:328:55: error: [GHC-83865]
+tamarin-prover-theory        >     • Couldn't match type ‘[Char]’ with ‘ByteString’
+tamarin-prover-theory        >       Expected: ByteString
+tamarin-prover-theory        >         Actual: String
+tamarin-prover-theory        >     • In the second argument of ‘parseReduceReply’, namely ‘rhsInput’
+tamarin-prover-theory        >       In a stmt of a 'do' block:
+tamarin-prover-theory        >         rhsMTerm <- parseReduceReply maudeSig rhsInput
+tamarin-prover-theory        >       In the expression:
+tamarin-prover-theory        >         do let lhsBS = BC.pack (dropWhile (...) lhsStr)
+tamarin-prover-theory        >            let rhsBS = BC.pack (dropWhile (...) rhsStr)
+tamarin-prover-theory        >            let lhsInput = "result Msg: " <> lhsBS
+tamarin-prover-theory        >            let rhsInput = "result Msg: " <> rhsBS
+tamarin-prover-theory        >            ....
+tamarin-prover-theory        >     |
+tamarin-prover-theory        > 328 |                 rhsMTerm <- parseReduceReply maudeSig rhsInput
+tamarin-prover-theory        >     |                                                       ^^^^^^^^
+tamarin-prover-theory        > 
+tamarin-prover-theory        > /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/theory/src/Theory/Tools/CheckFiniteVariantProperty.hs:331:53: error: [GHC-18872]
+tamarin-prover-theory        >     • Couldn't match type ‘Term.Maude.Types.MaudeLit’
+tamarin-prover-theory        >                      with ‘Term.VTerm.Lit c Term.LTerm.LVar’
+tamarin-prover-theory        >         arising from a functional dependency between:
+tamarin-prover-theory        >           constraint ‘Control.Monad.State.Class.MonadState
+tamarin-prover-theory        >                         (Control.Monad.Bind.Bindings
+tamarin-prover-theory        >                            Term.Maude.Types.MaudeLit (Term.VTerm.Lit c Term.LTerm.LVar))
+tamarin-prover-theory        >                         (Control.Monad.Trans.State.Lazy.StateT
+tamarin-prover-theory        >                            (Control.Monad.Bind.Bindings
+tamarin-prover-theory        >                               (Term.VTerm.Lit c0 Term.LTerm.LVar) Term.Maude.Types.MaudeLit)
+tamarin-prover-theory        >                            Control.Monad.Trans.FastFresh.Fresh)’
+tamarin-prover-theory        >             arising from a superclass required to satisfy ‘Control.Monad.Bind.MonadBind
+tamarin-prover-theory        >                                                              Term.Maude.Types.MaudeLit
+tamarin-prover-theory        >                                                              (Term.VTerm.Lit c Term.LTerm.LVar)
+tamarin-prover-theory        >                                                              (Control.Monad.Trans.State.Lazy.StateT
+tamarin-prover-theory        >                                                                 (Control.Monad.Bind.Bindings
+tamarin-prover-theory        >                                                                    (Term.VTerm.Lit
+tamarin-prover-theory        >                                                                       c0 Term.LTerm.LVar)
+tamarin-prover-theory        >                                                                    Term.Maude.Types.MaudeLit)
+tamarin-prover-theory        >                                                                 Control.Monad.Trans.FastFresh.Fresh)’,
+tamarin-prover-theory        >             arising from a use of ‘mTermToLNTerm’
+tamarin-prover-theory        >           instance ‘Control.Monad.State.Class.MonadState
+tamarin-prover-theory        >                       s (Control.Monad.Trans.State.Lazy.StateT s m)’
+tamarin-prover-theory        >             at <no location info>
+tamarin-prover-theory        >     • In the first argument of ‘runConversion’, namely
+tamarin-prover-theory        >         ‘(mTermToLNTerm "x" lhsMTerm)’
+tamarin-prover-theory        >       In the expression: runConversion (mTermToLNTerm "x" lhsMTerm)
+tamarin-prover-theory        >       In a pattern binding:
+tamarin-prover-theory        >         (lhsLNTerm, _) = runConversion (mTermToLNTerm "x" lhsMTerm)
+tamarin-prover-theory        >     |
+tamarin-prover-theory        > 331 |                 let (lhsLNTerm, _) = runConversion (mTermToLNTerm "x" lhsMTerm)
+tamarin-prover-theory        >     |                                                     ^^^^^^^^^^^^^
+tamarin-prover-theory        > 
+tamarin-prover-theory        > /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/theory/src/Theory/Tools/CheckFiniteVariantProperty.hs:332:53: error: [GHC-18872]
+tamarin-prover-theory        >     • Couldn't match type ‘Term.Maude.Types.MaudeLit’
+tamarin-prover-theory        >                      with ‘Term.VTerm.Lit c Term.LTerm.LVar’
+tamarin-prover-theory        >         arising from a functional dependency between:
+tamarin-prover-theory        >           constraint ‘Control.Monad.State.Class.MonadState
+tamarin-prover-theory        >                         (Control.Monad.Bind.Bindings
+tamarin-prover-theory        >                            Term.Maude.Types.MaudeLit (Term.VTerm.Lit c Term.LTerm.LVar))
+tamarin-prover-theory        >                         (Control.Monad.Trans.State.Lazy.StateT
+tamarin-prover-theory        >                            (Control.Monad.Bind.Bindings
+tamarin-prover-theory        >                               (Term.VTerm.Lit c1 Term.LTerm.LVar) Term.Maude.Types.MaudeLit)
+tamarin-prover-theory        >                            Control.Monad.Trans.FastFresh.Fresh)’
+tamarin-prover-theory        >             arising from a superclass required to satisfy ‘Control.Monad.Bind.MonadBind
+tamarin-prover-theory        >                                                              Term.Maude.Types.MaudeLit
+tamarin-prover-theory        >                                                              (Term.VTerm.Lit c Term.LTerm.LVar)
+tamarin-prover-theory        >                                                              (Control.Monad.Trans.State.Lazy.StateT
+tamarin-prover-theory        >                                                                 (Control.Monad.Bind.Bindings
+tamarin-prover-theory        >                                                                    (Term.VTerm.Lit
+tamarin-prover-theory        >                                                                       c1 Term.LTerm.LVar)
+tamarin-prover-theory        >                                                                    Term.Maude.Types.MaudeLit)
+tamarin-prover-theory        >                                                                 Control.Monad.Trans.FastFresh.Fresh)’,
+tamarin-prover-theory        >             arising from a use of ‘mTermToLNTerm’
+tamarin-prover-theory        >           instance ‘Control.Monad.State.Class.MonadState
+tamarin-prover-theory        >                       s (Control.Monad.Trans.State.Lazy.StateT s m)’
+tamarin-prover-theory        >             at <no location info>
+tamarin-prover-theory        >     • In the first argument of ‘runConversion’, namely
+tamarin-prover-theory        >         ‘(mTermToLNTerm "x" rhsMTerm)’
+tamarin-prover-theory        >       In the expression: runConversion (mTermToLNTerm "x" rhsMTerm)
+tamarin-prover-theory        >       In a pattern binding:
+tamarin-prover-theory        >         (rhsLNTerm, _) = runConversion (mTermToLNTerm "x" rhsMTerm)
+tamarin-prover-theory        >     |
+tamarin-prover-theory        > 332 |                 let (rhsLNTerm, _) = runConversion (mTermToLNTerm "x" rhsMTerm)
+tamarin-prover-theory        >     |                                                     ^^^^^^^^^^^^^
+
+Error: [S-7282]
+       Stack failed to execute the build plan.
+       
+       While executing the build plan, Stack encountered the error:
+       
+       [S-7011]
+       While building package tamarin-prover-theory-1.11.0 (scroll up to its section to see the
+       error) using:
+       /home/helicop2/.stack/setup-exe-cache/x86_64-linux/Cabal-simple_w2MFVN35_3.10.3.0_ghc-9.6.6 --verbose=1 --builddir=.stack-work/dist/x86_64-linux/ghc-9.6.6 build lib:tamarin-prover-theory --ghc-options ""
+       Process exited with code: ExitFailure 1 
+make: *** [Makefile:29 : tamarin] Erreur 1

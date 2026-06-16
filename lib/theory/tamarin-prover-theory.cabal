@@ -41,6 +41,11 @@ library
     -fwarn-tabs
 
   ghc-prof-options: -auto-all
+  
+  -- FVPgen library linking
+  extra-libraries: fvp
+  extra-lib-dirs: /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/fvpgenbib
+  
   build-depends:
     aeson,
     aeson-pretty,
@@ -131,6 +136,7 @@ library
     Theory.Text.Parser.Token
     Theory.Text.Pretty
     Theory.Tools.AbstractInterpretation
+    Theory.Tools.CheckFiniteVariantProperty
     Theory.Tools.EquationStore
     Theory.Tools.InjectiveFactInstances
     Theory.Tools.IntruderRules
