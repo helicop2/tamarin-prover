@@ -62,11 +62,14 @@ import Sapic qualified
 import System.Console.CmdArgs.Explicit
 import System.Timeout (timeout)
 import Text.Parsec (ParseError)
+import Text.Parsec.Error (newErrorMessage, Message(..))
+import Text.Parsec.Pos (initialPos)
 import Text.Read (readEither)
 import Theory hiding (closeTheory, transReport)
 import Theory.Module
 import Theory.Text.Parser (diffTheory, parseIntruderRules, theory)
 import Theory.Text.Parser.Token
+import Theory.Tools.CheckFiniteVariantProperty qualified as FVP
 import Theory.Text.Pretty qualified as Pretty
 import Theory.Tools.AbstractInterpretation (EvaluationStyle (..))
 import Theory.Tools.IntruderRules
@@ -399,13 +402,25 @@ instance Show TheoryLoadError where
 
 -- | Load an open theory from a string with the given options.
 loadTheory ::
-  (Monad m) =>
+  (MonadIO m) =>
   TheoryLoadOptions ->
   String ->
   FilePath ->
   ExceptT TheoryLoadError m (Either OpenTheory OpenDiffTheory)
 loadTheory thyOpts input inFile = do
-  thy <- withExceptT ParserError $ liftEither $ unwrapError $ bimap parse parse thyParser
+  (thy0, finalState) <- withExceptT ParserError $ liftEither $ fmap unwrapEitherState $ unwrapError $ bimap parse parse thyParser
+  -- Process pending FVP equations if any
+  thy <- case fvpPending finalState of
+    [] -> pure thy0
+    eqs -> do
+      traceM ("[Theory " ++ theoryName thy0 ++ "] Processing FVP for " ++ show (length eqs) ++ " equations")
+      fvpResult <- liftIO $ FVP.runFVPPipelineFromSig (sig finalState) eqs
+      case fvpResult of
+        Left err -> throwError $ ParserError $ newErrorMessage (Message ("FVP check failed: " ++ err)) (initialPos "")
+        Right convergentRules -> do
+          let updateSig msig = foldl (flip addCtxtStRule) msig convergentRules
+              updateTheory = bimap (modifySig updateSig) (modifyDiffSig updateSig)
+          pure $ updateTheory thy0
   traceM ("[Theory " ++ theoryName thy ++ "] Theory loaded")
   pure $ addParamsOptions thyOpts thy
   where
@@ -413,7 +428,7 @@ loadTheory thyOpts input inFile = do
       | isDiffMode = Right $ diffTheory $ Just inFile
       | otherwise = Left $ theory $ Just inFile
 
-    parse p = parseString (toParserFlags thyOpts) inFile p input
+    parse p = parseStringWithState (toParserFlags thyOpts) inFile p input
 
     isDiffMode = thyOpts.diffMode
 
@@ -422,6 +437,13 @@ loadTheory thyOpts input inFile = do
     unwrapError (Right (Left e)) = Left e
     unwrapError (Right (Right v)) = Right $ Right v
     theoryName = either (._thyName) (._diffThyName)
+
+    unwrapEitherState :: Either (a, s) (b, s) -> (Either a b, s)
+    unwrapEitherState (Left (a, s))  = (Left a, s)
+    unwrapEitherState (Right (b, s)) = (Right b, s)
+
+    modifySig f thy = thy { _thySignature = (\(Signature msig) -> Signature (f msig)) (_thySignature thy) }
+    modifyDiffSig f thy = thy { _diffThySignature = (\(Signature msig) -> Signature (f msig)) (_diffThySignature thy) }
 
 -- | Preprocess an open theory based on the specified output module so that
 -- well-formedness can be checked (but do not translate yet)

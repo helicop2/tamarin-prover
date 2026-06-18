@@ -11,8 +11,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
 module Theory.Tools.CheckFiniteVariantProperty (
-    initFVPgen
-  , processFVP
+    processFVP
   , processFVPText
   , fvpInputToJsonString
   , parseResultJson
@@ -41,15 +40,17 @@ import qualified Data.Set            as S
 import qualified Data.Map            as M
 import qualified Data.ByteString.Char8 as BC
 import           System.IO (hFlush, stdout)
-import           Term.LTerm (LNTerm, viewTerm, TermView(..), Lit(..), LVar(..), Name(..), NameTag(..), NameId(..), FunSym(..), ACSym(ACfct, Mult, Xor, Union, NatPlus))
+import           Term.LTerm (LNTerm, viewTerm, TermView(..), Lit(..), LVar(..), LSort(..), Name(..), NameTag(..), NameId(..), FunSym(..), ACSym(ACfct, Mult, Xor, Union, NatPlus), Term(FAPP, LIT))
 import           Term.SubtermRule (CtxtStRule(..), StRhs(..), rRuleToCtxtStRule)
-import           Term.Maude.Parser (parseReduceReply)
 import           Term.Maude.Signature (MaudeSig, stFunSyms, stACFunSyms)
-import           Term.Maude.Types (mTermToLNTerm)
 import           Term.Rewriting.Definitions (RRule(RRule))
-import           Control.Monad.Bind (evalBindT, noBindings)
-import           Control.Monad.Fresh (evalFresh, nothingUsed)
-import           Control.Exception (catch, SomeException)
+import           Control.Concurrent (forkOS)
+import           Control.Monad (forever)
+import           Control.Concurrent.Chan (Chan, newChan, readChan, writeChan)
+import           Control.Concurrent.MVar (MVar, modifyMVar, newEmptyMVar, newMVar, putMVar, takeMVar)
+import           Control.Exception (catch, try, throwIO, SomeException)
+import           System.IO.Unsafe (unsafePerformIO)
+import           Data.Char (isAlphaNum, isDigit, isUpper, isSpace)
 
 -- =============================================================================
 -- Types (from fvpgenbib/bridge/rewrite_rule_json.hs)
@@ -97,23 +98,50 @@ foreign import ccall "bridge.h init_ocaml_runtime"
 foreign import ccall "bridge.h process_fvp_full_json"
     c_process_fvp_full_json :: CString -> IO CString
 
--- | Wrapper pour initialiser la bibliothèque FVPgen
-initFVPgen :: IO ()
-initFVPgen = c_init_ocaml_runtime
+-- | Channel for dispatching work to the dedicated FVP engine thread.
+--   The engine thread is created on demand by 'ensureFvpEngine' on a
+--   bound OS thread via 'forkOS', ensuring all OCaml FFI calls share the
+--   same OS thread and thus the same OCaml domain state.
+{-# NOINLINE globalFvpChan #-}
+globalFvpChan :: MVar (Maybe (Chan (IO ())))
+globalFvpChan = unsafePerformIO $ newMVar Nothing
+
+-- | Ensure the FVP engine thread is running; returns the dispatch channel.
+--   Lazily creates the bound thread on first call via 'modifyMVar' for
+--   thread-safe single initialisation.
+ensureFvpEngine :: IO (Chan (IO ()))
+ensureFvpEngine = modifyMVar globalFvpChan $ \m -> case m of
+    Just chan -> return (Just chan, chan)
+    Nothing   -> do
+        chan <- newChan
+        _ <- forkOS $ do
+            c_init_ocaml_runtime
+            putStrLn "[FVPgen] Engine ready on bound thread"
+            hFlush stdout
+            forever $ readChan chan >>= \x -> x
+        return (Just chan, chan)
 
 -- | Appelle FVPgen avec une entrée FvpInput
 processFVP :: FvpInput -> IO FvpResult
 processFVP input = processFVPText (fvpInputToJsonString input)
 
 -- | Version avec String directement
+--   Dispatches work to the dedicated FVP engine thread so that all
+--   OCaml FFI calls ('c_process_fvp_full_json') run on the same OS thread
+--   that called 'caml_startup', avoiding OCaml 5.x domain-lock assertion.
+--   The engine thread is lazily created on the first call.
 processFVPText :: String -> IO FvpResult
 processFVPText input = do
-    inputC <- newCString input
-    resultC <- c_process_fvp_full_json inputC
-    free inputC
-    result <- peekCString resultC
-    free resultC
-    return (parseResultJson result)
+    chan <- ensureFvpEngine
+    resultVar <- (newEmptyMVar :: IO (MVar (Either SomeException FvpResult)))
+    writeChan chan $ do
+        r <- try $ withCString input $ \inputC -> do
+            resultC <- c_process_fvp_full_json inputC
+            s <- peekCString resultC
+            free resultC
+            return $ parseResultJson s
+        putMVar resultVar r
+    takeMVar resultVar >>= either throwIO return
 
 -- =============================================================================
 -- JSON Conversion (from fvpgenbib/bridge/rewrite_rule_json.hs)
@@ -229,15 +257,12 @@ parseResultJson json =
 
 -- | Extrait une valeur string d'une position donnée (helper)
 extractStringAt :: String -> String
-extractStringAt s = 
-    case L.dropWhile (/= ':') s of
-        ':':rest ->
-            let rest' = L.dropWhile (\c -> c == ' ' || c == '\t' || c == '\n') rest
-            in case rest' of
-                '"':more ->
-                    let (val, _) = L.break (== '"') more
-                    in val
-                _ -> ""
+extractStringAt s =
+    let trimmed = L.dropWhile (\c -> c == ' ' || c == '\t' || c == '\n') s
+    in case trimmed of
+        '"':more ->
+            let (val, _) = L.break (== '"') more
+            in val
         _ -> ""
 
 -- =============================================================================
@@ -358,46 +383,157 @@ buildFVPInput syms eqs = FvpInput
     }
 
 -- | Parse convergent_R from FVPResult back into CtxtStRule objects
--- Parses Maude-style rewrite rule strings (format: "lhs -> rhs") and converts them to CtxtStRule
--- Input: MaudeSig for parsing context, list of rule strings from FVPResult
--- Returns: Either error message or list of parsed CtxtStRule objects
+-- Parses OCaml prefix-format rewrite rule strings (e.g. "f(X_1,X_2) -> X_1")
+-- and converts them to CtxtStRule. The OCaml output uses X_N for variables and
+-- f(args) for syntactic function applications.
 parseConvergentRulesToCtxtStRule :: MaudeSig -> [String] -> Either String [CtxtStRule]
 parseConvergentRulesToCtxtStRule _ [] = Right []
-parseConvergentRulesToCtxtStRule maudeSig ruleStrs = 
-    traverse parseOneRule ruleStrs
+parseConvergentRulesToCtxtStRule maudeSig ruleStrs = do
+    let symMap = buildFunSymMap maudeSig
+    rrules <- traverse (parseOneRule symMap) ruleStrs
+    traverse ruleToCtxtStRule rrules
   where
-    parseOneRule :: String -> Either String CtxtStRule
-    parseOneRule ruleStr = do
-        -- Split rule string by " -> " to get LHS and RHS
-        case break (\c -> c == '-') ruleStr of
-            (lhsStr, '-':'>':rhsStr) -> do
-                -- Parse LHS and RHS using parseReduceReply
-                let lhsBS = BC.pack (dropWhile (==' ') lhsStr)
-                let rhsBS = BC.pack (dropWhile (==' ') rhsStr)
-                
-                -- parseReduceReply expects "result <sort>: <term>" format
-                -- We need to wrap our terms in this format
-                let lhsInput = BC.pack "result Msg: " <> lhsBS
-                let rhsInput = BC.pack "result Msg: " <> rhsBS
-                
-                lhsMTerm <- parseReduceReply maudeSig lhsInput
-                rhsMTerm <- parseReduceReply maudeSig rhsInput
-                
-                -- Convert MTerm to LNTerm using mTermToLNTerm with proper monad evaluation
-                -- mTermToLNTerm "x" mt evaluates in BindT monad, we run it with empty bindings
-                let lhsLNTerm = (mTermToLNTerm "x" lhsMTerm `evalBindT` noBindings) `evalFresh` nothingUsed :: LNTerm
-                let rhsLNTerm = (mTermToLNTerm "x" rhsMTerm `evalBindT` noBindings) `evalFresh` nothingUsed :: LNTerm
-                
-                -- Create RRule and convert to CtxtStRule
-                let rule = lhsLNTerm `RRule` rhsLNTerm
-                case rRuleToCtxtStRule rule of
-                    Just ctxtStRule -> Right ctxtStRule
-                    Nothing -> Left $ "Failed to convert rule to CtxtStRule: " ++ ruleStr
-            _ -> Left $ "Invalid rule format (expected 'lhs -> rhs'): " ++ ruleStr
+    parseOneRule symMap ruleStr = do
+        case splitArrow ruleStr of
+            Just (lhsStr, rhsStr) -> do
+                lhs <- parseOCamlTerm symMap lhsStr
+                rhs <- parseOCamlTerm symMap rhsStr
+                Right (lhs `RRule` rhs)
+            Nothing -> Left $ "Invalid rule format (expected 'lhs -> rhs'): " ++ ruleStr
+
+    ruleToCtxtStRule rrule =
+        case rRuleToCtxtStRule rrule of
+            Just ctxtStRule -> Right ctxtStRule
+            Nothing -> Left $ "Failed to convert rule to CtxtStRule: " ++ show rrule
 
 -- | Backward compatibility: old name for parseConvergentRulesToCtxtStRule
 parseConvergentRules :: [String] -> Either String [CtxtStRule]
 parseConvergentRules _ = Left "parseConvergentRules requires MaudeSig context - use parseConvergentRulesToCtxtStRule instead"
+
+-- | Build a map from function symbol name to (arity, FunSym) for OCaml term parsing
+buildFunSymMap :: MaudeSig -> M.Map String (Int, FunSym)
+buildFunSymMap sig =
+    M.fromList noEqEntries `M.union` M.fromList acEntries
+  where
+    noEqEntries =
+        [ (BC.unpack name, (arity, NoEq (name, (arity, priv, constr))))
+        | (name, (arity, priv, constr)) <- S.toList (stFunSyms sig)
+        ]
+    acEntries =
+        [ (BC.unpack name, (2, AC (ACfct (name, (priv, constr)))))
+        | (name, (priv, constr)) <- S.toList (stACFunSyms sig)
+        ]
+
+-- | Split a rule string on \" -> \"
+splitArrow :: String -> Maybe (String, String)
+splitArrow s =
+    case break (== '-') s of
+        (lhs, '-':'>':rhs) -> Just (lhs, rhs)
+        _                  -> Nothing
+
+-- | Parse a single OCaml prefix-format term into LNTerm
+-- Handles: f(X_1,X_2), X_1, c (0-ary), and parenthesized subterms
+parseOCamlTerm :: M.Map String (Int, FunSym) -> String -> Either String LNTerm
+parseOCamlTerm symMap input =
+    case parseTerm' (dropWhile isSpace input) of
+        Right (t, rest) ->
+            case parseInfixCont t (dropWhile isSpace rest) of
+                Right (t', rest') ->
+                    if null (dropWhile isSpace rest')
+                        then Right t'
+                        else Left $ "Trailing characters in term: " ++ take 20 rest'
+                Left err -> Left err
+        Left err -> Left err
+  where
+    parseTerm' s
+        | null s = Left "Unexpected end of term"
+        | head s == '(' = do
+            let (inner, afterParen) = extractParenBlock (tail s)
+            (t, rest) <- parseTerm' (dropWhile isSpace inner)
+            case parseInfixCont t (dropWhile isSpace rest) of
+                Right (t', rest') ->
+                    if null (dropWhile isSpace rest')
+                        then Right (t', afterParen)
+                        else Left $ "Trailing content in parenthesized expression: " ++ take 20 rest'
+                Left err -> Left err
+        | otherwise =
+            let (name, rest) = span (\c -> isAlphaNum c || c == '_') s
+            in if null name
+               then Left $ "Unexpected character: " ++ take 20 s
+               else case dropWhile isSpace rest of
+                   '(' : afterOpen -> do
+                       let (inner, afterParen) = extractParenBlock afterOpen
+                       args <- parseArgs (dropWhile isSpace inner)
+                       case M.lookup name symMap of
+                           Just (arity, fsym)
+                               | length args == arity ->
+                                   Right (FAPP fsym args, afterParen)
+                               | otherwise ->
+                                   Left $ "Arity mismatch for " ++ name ++ ": expected " ++ show arity ++ ", got " ++ show (length args)
+                           Nothing ->
+                               Left $ "Unknown function: " ++ name
+                   rest' ->
+                       case M.lookup name symMap of
+                           Just (0, fsym) -> Right (FAPP fsym [], rest')
+                           Just (arity, _) ->
+                               Left $ "Function " ++ name ++ " requires " ++ show arity ++ " arguments"
+                           Nothing -> case parseOCamlVar name of
+                               Just (vname, vidx) ->
+                                   Right (LIT (Var (LVar vname LSortMsg vidx)), rest')
+                               Nothing ->
+                                   Left $ "Unknown identifier: " ++ name
+
+    parseArgs s
+        | null s = Right []
+        | head s == ')' = Right []
+        | otherwise = case parseTerm' s of
+            Right (t, rest) -> case dropWhile isSpace rest of
+                ',' : more -> (t:) <$> parseArgs (dropWhile isSpace more)
+                _          -> Right [t]
+            Left err -> Left err
+
+    -- | Try to continue parsing an infix AC expression.
+    -- After parsing a term @t@, if the remaining input starts with a known
+    -- binary AC operator followed by another term, chain them as FAPP.
+    -- Recurse to handle chained infix (e.g. a op b op c).
+    parseInfixCont :: LNTerm -> String -> Either String (LNTerm, String)
+    parseInfixCont t s =
+        let (op, rest2) = span (\c -> isAlphaNum c || c == '_') s
+        in if null op
+           then Right (t, s)
+           else case M.lookup op symMap of
+               Just (2, fsym) ->
+                   case parseTerm' (dropWhile isSpace rest2) of
+                       Right (right, rest4) ->
+                           parseInfixCont (FAPP fsym [t, right]) (dropWhile isSpace rest4)
+                       Left err -> Left err
+               _ -> Right (t, s)
+
+-- | Extract content between matching parentheses.
+-- Input: string AFTER the opening '('
+-- Returns: (content_between_parens, string_after_matching_')')
+extractParenBlock :: String -> (String, String)
+extractParenBlock = go (0 :: Integer) ""
+  where
+    go _ acc "" = (reverse acc, "")
+    go 0 acc (')' : rest) = (reverse acc, rest)
+    go n acc (')' : rest) = go (n - 1) (')' : acc) rest
+    go n acc ('(' : rest) = go (n + 1) ('(' : acc) rest
+    go n acc (c : rest)   = go n (c : acc) rest
+
+-- | Parse OCaml variable name like X_1, X_2 etc.
+-- Returns (base_name, index) or Nothing if not a valid variable
+parseOCamlVar :: String -> Maybe (String, Integer)
+parseOCamlVar s = case s of
+    (ch : _) | isUpper ch ->
+        let (base, rest) = span (\ch -> isAlphaNum ch || ch == '_') s
+        in case rest of
+            '_' : numStr
+                | not (null numStr), all isDigit numStr ->
+                    Just (base, read numStr)
+            "" -> Just (base, 0)
+            _  -> Nothing
+    _ -> Nothing
 
 -- | Main integration function: run full FVP pipeline from MaudeSig
 -- Takes MaudeSig and equations, returns convergent rules or error
@@ -429,6 +565,7 @@ runFVPPipeline maudeSig syms eqs = do
     putStrLn "[DEBUG FVP] ----------------------------------------"
     hFlush stdout
     result <- (processFVP input) `catch` handleException
+    putStrLn $ "[DEBUG FVP] Raw FVPgen result JSON: " ++ show result
     case result of
         FvpResult _ _ _ conv _ convR -> 
             case conv of

@@ -110,6 +110,8 @@ module Theory.Text.Parser.Token (
   , mkStateSig
   , modifyStateSig
   , modifyStateFlag
+  , modifyStateFvpPending
+  , parseStringWithState
 
     -- * Basic Parsing
   , Parser
@@ -139,6 +141,7 @@ import           Control.Monad
 import           System.FilePath
 
 import           Text.Parsec         hiding ((<|>))
+import           Text.Parsec.Prim    (runPT)
 import qualified Text.Parsec.Token   as T
 
 import           Theory
@@ -146,6 +149,7 @@ import qualified Control.Monad.Catch as Catch
 import Data.Functor.Identity
 import Theory.Sapic.Pattern
 import Theory.Sapic
+import Term.SubtermRule (CtxtStRule)
 
 
 ------------------------------------------------------------------------------
@@ -155,19 +159,20 @@ import Theory.Sapic
 data ParserState = PState
        { sig  :: MaudeSig              -- Current signature
        , flags ::  S.Set String        -- Defined flags for pre-processing
+       , fvpPending :: [CtxtStRule]    -- Pending FVP equations to process after parsing
        }
        deriving( Eq, Ord, Show )
 
 -- | A monoid instance to combine parser signatures.
 instance Semigroup ParserState where
- PState sig1 flags1 <> PState sig2 flags2 =
-   PState (sig1 <> sig2) (flags1 `S.union` flags2)
+ PState sig1 flags1 fvp1 <> PState sig2 flags2 fvp2 =
+   PState (sig1 <> sig2) (flags1 `S.union` flags2) (fvp1 ++ fvp2)
 
 instance Monoid ParserState where
-  mempty = PState {sig=mempty, flags = S.empty}
+  mempty = PState {sig=mempty, flags = S.empty, fvpPending = []}
 
 mkStateSig :: MaudeSig -> ParserState
-mkStateSig sign = mempty {sig=sign}
+mkStateSig sign = mempty {sig=sign, fvpPending = []}
 
 modifyStateSig ::  Monad m => (MaudeSig -> MaudeSig) -> ParsecT s ParserState m ()
 modifyStateSig modifier = do
@@ -178,6 +183,11 @@ modifyStateFlag ::  Monad m => (S.Set String -> S.Set String) -> ParsecT s Parse
 modifyStateFlag modifier = do
    st <- getState
    setState (st {flags = modifier $ flags st})
+
+modifyStateFvpPending :: Monad m => [CtxtStRule] -> ParsecT s ParserState m ()
+modifyStateFvpPending eqs = do
+   st <- getState
+   setState (st {fvpPending = fvpPending st ++ eqs})
 
 -- | A parser for a stream of tokens.
 type Parser a = Parsec String ParserState a
@@ -235,6 +245,14 @@ parseString flags0 = parseStringWState $ mempty {sig=pairMaudeSig, flags=S.fromL
 
 parseFile :: [String] -> Parser a -> FilePath -> IO a
 parseFile flags0 = parseFileWState $ mempty {sig=pairMaudeSig, flags=S.fromList flags0}
+
+-- | Run a parser on a string and return the final parser state (for deferred processing).
+parseStringWithState :: [String] -> FilePath -> Parser a -> String
+                     -> Either ParseError (a, ParserState)
+parseStringWithState flags0 srcDesc parser input =
+    runIdentity $ runPT (T.whiteSpace spthy *> (parser >>= \v -> getState >>= \st -> return (v, st))) initState srcDesc input
+  where
+    initState = mempty {sig=pairMaudeSig, flags=S.fromList flags0}
 
 
 -- Token parsers

@@ -48,9 +48,6 @@ import Data.Label.Total
 import Data.Label.Mono (Lens)
 import Theory.Sapic
 
--- FVPgen integration imports
-import qualified Theory.Tools.CheckFiniteVariantProperty as FVP
-import           System.IO.Unsafe (unsafePerformIO)
 import qualified Data.Functor
 
 --import Debug.Trace
@@ -179,21 +176,8 @@ equations = do
     unless convergent $ symbol "equations" *> colon
     eqs <- commaSep1 equation
     
-    -- Get current signature state
-    st <- getState
-    let currentSig = sig st
-    
-    -- Run FVP pipeline (using unsafePerformIO - necessary for parser monad integration)
-    let fvpResult = unsafePerformIO $ FVP.runFVPPipelineFromSig currentSig eqs
-    
-    -- Handle FVP result
-    case fvpResult of
-        Left err -> 
-            -- FVP check failed - fail the parser with error message
-            fail $ "FVP check failed: " ++ err
-        Right convergentRules -> 
-            -- FVP succeeded - replace original equations with convergent rules
-            modifyStateSig (\s -> foldl (flip addCtxtStRule) s convergentRules)
+    -- Store pending FVP equations for post-processing in loadTheory
+    modifyStateFvpPending eqs
     
     -- Set convergent flag
     modifyState (\st' -> st' { sig = (sig st') { eqConvergent = convergent } })
