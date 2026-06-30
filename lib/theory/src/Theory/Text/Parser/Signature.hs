@@ -13,6 +13,7 @@ module Theory.Text.Parser.Signature (
     , builtins
     , options
     , functions
+    , order
     , equations
     , liftedAddPredicate
     , preddeclaration
@@ -22,12 +23,13 @@ module Theory.Text.Parser.Signature (
 )
 where
 
-import Term.Maude.Signature
+import           Term.Maude.Signature
 import           Prelude                    hiding (id)
 import qualified Data.ByteString.Char8      as BC
 import           Data.Either()
 -- import           Data.Monoid                hiding (Last)
 import qualified Data.Set                   as S
+-- import qualified Data.List                  as L
 --import           Data.Char
 --import qualified Data.Map                   as M
 import           Control.Applicative        hiding (empty, many, optional)
@@ -163,8 +165,45 @@ function =  do
 
 
 functions :: Parser [SapicFunSym]
-functions =
-    (try (symbol "functions") <|> symbol "function") *> colon *> commaSep1 function
+functions = do
+    syms <- (try (symbol "functions") <|> symbol "function") *> colon *> commaSep1 function
+    -- Track definition order of user-defined functions
+    st <- getState
+    let names = [case f of
+                    (NoEqUser (n, _), _, _) -> BC.unpack n
+                    (ACfctUser (n, _), _, _) -> BC.unpack n
+                | f <- syms]
+    setState (st { functionOrder = functionOrder st ++ names })
+    return syms
+
+-- | Parse an order section: @order: f < g < h@
+-- Defines the function precedence for the reduction order.
+-- All user-defined functions must appear exactly once.
+order :: Parser ()
+order = do
+    symbol_ "order"
+    colon
+    names <- identifier `sepBy1` (symbol_ "<")
+
+    st <- getState
+    let declaredNames = functionOrder st
+
+    -- Check all names in order are declared functions
+    let unknownNames = filter (`notElem` declaredNames) names
+    when (not $ null unknownNames) $
+        fail $ "Unknown functions in order section: " ++ show unknownNames
+
+    -- Check for duplicates
+    let nameSet = S.fromList names
+    when (S.size nameSet /= length names) $
+        fail $ "Duplicate function names in order section"
+
+    -- Check all declared functions appear in the order
+    let missingNames = filter (`notElem` names) declaredNames
+    when (not $ null missingNames) $
+        fail $ "Missing functions in order section: " ++ show missingNames
+
+    setState (st { functionOrder = names })
 
 equations :: Parser ()
 equations = do

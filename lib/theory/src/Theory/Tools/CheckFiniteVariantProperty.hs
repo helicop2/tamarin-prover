@@ -372,12 +372,12 @@ ctxtStRuleToPair acSyms (CtxtStRule lhs (StRhs _ rhs)) =
         rhsStr = lnTermToPrefixString acSyms projMapping rhs
     in (lhsStr, rhsStr)
 
--- | Build FVPInput from symbols and equations
--- Sets rewriteRn to empty and creates a void order (empty precedence)
-buildFVPInput :: [Symbol] -> [(String, String)] -> FvpInput
-buildFVPInput syms eqs = FvpInput
+-- | Build FVPInput from symbols, equations, and user-defined precedence.
+-- The precedence list defines the reduction order used by FVPgen.
+buildFVPInput :: [Symbol] -> [(String, String)] -> [String] -> FvpInput
+buildFVPInput syms eqs precedence = FvpInput
     { symbols = syms
-    , order = Order (map symName syms)  -- alphabetical precedence
+    , order = Order precedence
     , equations = eqs
     , rewriteRn = []    -- empty rewrite rules for now
     }
@@ -536,24 +536,32 @@ parseOCamlVar s = case s of
     _ -> Nothing
 
 -- | Main integration function: run full FVP pipeline from MaudeSig
--- Takes MaudeSig and equations, returns convergent rules or error
-runFVPPipelineFromSig :: MaudeSig 
+-- Takes MaudeSig, equations, and a user-defined function precedence.
+-- Builds the full precedence by appending remaining (builtin) symbols
+-- alphabetically after the user-defined order.
+runFVPPipelineFromSig :: MaudeSig
                       -> [CtxtStRule]
+                      -> [String]
                       -> IO (Either String [CtxtStRule])
-runFVPPipelineFromSig sig eqs = do
+runFVPPipelineFromSig sig eqs userPrecedence = do
     let syms = collectAndSortSymbolsFromSig sig
-    let acSyms = acSymbolNames syms
-    let eqPairs = map (ctxtStRuleToPair acSyms) eqs
-    runFVPPipeline sig syms eqPairs
+        acSyms = acSymbolNames syms
+        eqPairs = map (ctxtStRuleToPair acSyms) eqs
+        -- Build full precedence: user-defined order first, then remaining builtins alphabetically
+        allNames = map symName syms
+        remainingNames = L.sort $ filter (`notElem` userPrecedence) allNames
+        fullPrecedence = userPrecedence ++ remainingNames
+    runFVPPipeline sig syms eqPairs fullPrecedence
 
--- | Main FVP pipeline: takes MaudeSig, symbols and equation pairs
+-- | Main FVP pipeline: takes MaudeSig, symbols, equation pairs and precedence.
 -- MaudeSig is used for parsing convergent rules back to CtxtStRule objects
 runFVPPipeline :: MaudeSig
-               -> [Symbol] 
-               -> [(String, String)] 
+               -> [Symbol]
+               -> [(String, String)]
+               -> [String]
                -> IO (Either String [CtxtStRule])
-runFVPPipeline maudeSig syms eqs = do
-    let input = buildFVPInput syms eqs
+runFVPPipeline maudeSig syms eqs precList = do
+    let input = buildFVPInput syms eqs precList
     -- DEBUG: Print FVPInput before sending to FVPgen
     putStrLn "[DEBUG FVP] FVPInput being sent to FVPgen:"
     putStrLn $ "[DEBUG FVP] Symbols (" ++ show (length syms) ++ "):"

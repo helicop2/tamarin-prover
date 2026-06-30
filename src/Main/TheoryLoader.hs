@@ -414,7 +414,7 @@ loadTheory thyOpts input inFile = do
     [] -> pure thy0
     eqs -> do
       traceM ("[Theory " ++ theoryName thy0 ++ "] Processing FVP for " ++ show (length eqs) ++ " equations")
-      fvpResult <- liftIO $ FVP.runFVPPipelineFromSig (sig finalState) eqs
+      fvpResult <- liftIO $ FVP.runFVPPipelineFromSig (sig finalState) eqs (functionOrder finalState)
       case fvpResult of
         Left err -> throwError $ ParserError $ newErrorMessage (Message ("FVP check failed: " ++ err)) (initialPos "")
         Right convergentRules -> do

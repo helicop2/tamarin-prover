@@ -242,6 +242,8 @@ theory inFile = do
            msig <- sig <$> getState
            let thy' = foldl (flip addFunctionTypingInfo) thy fs in
              addItems inFile0 $ set (sigpMaudeSig . thySignature) msig thy'
+      , do try order
+           addItems inFile0 thy
       , do equations
            msig <- sig <$> getState
            addItems inFile0 $ set (sigpMaudeSig . thySignature) msig thy
@@ -405,6 +407,8 @@ diffTheory inFile = do
                           -- are only added to maude signature, but not to theory.
            msig <- sig <$> getState
            addItems inFile0 $ set (sigpMaudeSig . diffThySignature) msig thy
+      , do try order
+           addItems inFile0 thy
       , do equations
            msig <- sig <$> getState
            addItems inFile0 $ set (sigpMaudeSig . diffThySignature) msig thy
