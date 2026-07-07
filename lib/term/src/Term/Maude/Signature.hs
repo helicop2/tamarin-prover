@@ -169,7 +169,7 @@ addFunSym funsym msig = case funsym of
 -- | Add subterm rule to given maude signature.
 addCtxtStRule :: CtxtStRule -> MaudeSig -> MaudeSig
 addCtxtStRule str msig =
-    msig `mappend` mempty {stRules=S.fromList [str]}
+    (msig `mappend` mempty {stRules=S.fromList [str]}) { eqConvergent = eqConvergent msig }
 
 -- | Returns all rewriting rules including the rules
 --   for DH, BP, and multiset.

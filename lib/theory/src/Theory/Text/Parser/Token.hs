@@ -106,8 +106,9 @@ module Theory.Text.Parser.Token (
   , list
 
   -- * Parsing State
-  , ParserState(..)
-  , mkStateSig
+   , ParserState(..)
+   , EqProcessingMode(..)
+   , mkStateSig
   , modifyStateSig
   , modifyStateFlag
   , modifyStateFvpPending
@@ -156,21 +157,25 @@ import Term.SubtermRule (CtxtStRule)
 -- Parser
 ------------------------------------------------------------------------------
 
+data EqProcessingMode = DirectMode | ConvergentMode | ToCompleteMode
+  deriving (Eq, Ord, Show)
+
 data ParserState = PState
        { sig  :: MaudeSig              -- Current signature
        , flags ::  S.Set String        -- Defined flags for pre-processing
        , fvpPending :: [CtxtStRule]    -- Pending FVP equations to process after parsing
        , functionOrder :: [String]     -- Order of user-defined functions (definition order or from order: section)
+       , eqProcessingMode :: EqProcessingMode  -- How equations should be processed
        }
        deriving( Eq, Ord, Show )
 
 -- | A monoid instance to combine parser signatures.
 instance Semigroup ParserState where
- PState sig1 flags1 fvp1 fo1 <> PState sig2 flags2 fvp2 fo2 =
-   PState (sig1 <> sig2) (flags1 `S.union` flags2) (fvp1 ++ fvp2) (fo1 ++ fo2)
+ PState sig1 flags1 fvp1 fo1 _ <> PState sig2 flags2 fvp2 fo2 m2 =
+   PState (sig1 <> sig2) (flags1 `S.union` flags2) (fvp1 ++ fvp2) (fo1 ++ fo2) m2
 
 instance Monoid ParserState where
-  mempty = PState {sig=mempty, flags = S.empty, fvpPending = [], functionOrder = []}
+  mempty = PState {sig=mempty, flags = S.empty, fvpPending = [], functionOrder = [], eqProcessingMode = DirectMode}
 
 mkStateSig :: MaudeSig -> ParserState
 mkStateSig sign = mempty {sig=sign, fvpPending = [], functionOrder = []}

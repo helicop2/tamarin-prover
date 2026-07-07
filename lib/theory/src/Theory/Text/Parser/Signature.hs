@@ -207,19 +207,30 @@ order = do
 
 equations :: Parser ()
 equations = do
-    convergent <- option False (try $ do
-        _ <- symbol "equations"
-        _ <- brackets (symbol "convergent")
-        colon
-        return True)
-    unless convergent $ symbol "equations" *> colon
+    mode <- option DirectMode $ asum
+      [ try $ do
+          _ <- symbol "equations"
+          _ <- brackets (symbol "to_complete")
+          colon
+          return ToCompleteMode
+      , try $ do
+          _ <- symbol "equations"
+          _ <- brackets (symbol "convergent")
+          colon
+          return ConvergentMode
+      ]
+    when (mode == DirectMode) $ symbol "equations" *> colon
     eqs <- commaSep1 equation
-    
-    -- Store pending FVP equations for post-processing in loadTheory
-    modifyStateFvpPending eqs
-    
-    -- Set convergent flag
-    modifyState (\st' -> st' { sig = (sig st') { eqConvergent = convergent } })
+
+    case mode of
+      ToCompleteMode -> do
+          modifyStateFvpPending eqs
+          modifyState $ \st -> st { sig = (sig st) { eqConvergent = True }
+                                  , eqProcessingMode = ToCompleteMode }
+      ConvergentMode -> do
+          modifyState $ \st -> st { sig = (foldl (flip addCtxtStRule) (sig st) eqs) { eqConvergent = True } }
+      DirectMode -> do
+          modifyState $ \st -> st { sig = (foldl (flip addCtxtStRule) (sig st) eqs) { eqConvergent = False } }
     return ()
   where
     equation = do
