@@ -18,6 +18,10 @@ default: fvpgenbib tamarin
 # =============================================================================
 .PHONY: fvpgenbib
 fvpgenbib:
+	@if [ ! -f lib/fvpgenbib/Makefile ]; then \
+		echo "[Build] Initializing fvpgenbib submodule..."; \
+		git submodule update --init lib/fvpgenbib; \
+	fi
 	@echo "[Build] Compiling fvpgenbib OCaml library..."
 	cd lib/fvpgenbib && $(MAKE) libfvp.so
 	@echo "[Build] fvpgenbib compiled."
