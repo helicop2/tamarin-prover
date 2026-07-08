@@ -30,11 +30,15 @@ fvpgenbib:
 .PHONY: tamarin
 tamarin: fvpgenbib
 	stack setup
-	stack install --ghc-options='-optl-Wl,-rpath,$$ORIGIN/../lib'
-	@echo "[Build] Installing fvpgenbib library..."
-	@mkdir -p ~/.local/lib
-	@cp lib/fvpgenbib/libfvp.so ~/.local/lib/
-	@echo "[Build] Tamarin prover installed."
+	stack install
+	@echo ""
+	@echo "========================================================"
+	@echo "  IMPORTANT: Add libfvp.so to your library path:"
+	@echo "  export LD_LIBRARY_PATH=$(CURDIR)/lib/fvpgenbib:\$$LD_LIBRARY_PATH"
+	@echo ""
+	@echo "  To make this permanent, add the line above to ~/.bashrc"
+	@echo "========================================================"
+	@echo ""
 
 # Single-threaded Tamarin
 .PHONY: single
