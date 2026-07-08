@@ -44,7 +44,6 @@ library
   
   -- FVPgen library linking
   extra-libraries: fvp
-  extra-lib-dirs: /home/helicop2/Work/Recherche/Code/tamarin-prover/lib/fvpgenbib
   
   build-depends:
     aeson,

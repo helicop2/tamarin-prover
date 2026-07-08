@@ -10,6 +10,8 @@ packages:
 resolver: lts-22.39
 ghc-options:
   "$everything": -Wall
+extra-lib-dirs:
+- lib/fvpgenbib
 nix:
   packages: [ zlib ]
 
