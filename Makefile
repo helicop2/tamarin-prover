@@ -28,9 +28,13 @@ fvpgenbib:
 
 # Default Tamarin installation via stack, multi-threaded
 .PHONY: tamarin
-tamarin:
+tamarin: fvpgenbib
 	stack setup
-	stack install
+	stack install --ghc-options='-optl-Wl,-rpath,$$ORIGIN/../lib'
+	@echo "[Build] Installing fvpgenbib library..."
+	@mkdir -p ~/.local/lib
+	@cp lib/fvpgenbib/libfvp.so ~/.local/lib/
+	@echo "[Build] Tamarin prover installed."
 
 # Single-threaded Tamarin
 .PHONY: single
