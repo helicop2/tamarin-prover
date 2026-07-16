@@ -455,7 +455,7 @@ execDiffProofMethod ctxt method sys =
 
     applyStep :: ProofMethod -> Side -> System -> Maybe (M.Map CaseName DiffSystem)
     applyStep m s dsSys = do
-      cases <- execProofMethod (eitherProofContext ctxt s) m dsSys
+      cases <- checkAndExecProofMethod (eitherProofContext ctxt s) m dsSys
       return $ M.map (\x -> L.set dsSystem (Just x) sys) cases
 
 -- | returns True if there are no reducible operators on top of a right side of a subterm in the subterm store
@@ -618,7 +618,7 @@ oracleRanking preSort oracle quitOnEmpty ctxt _sys ags0 = unsafePerformIO $ do
   guard $ trace logMsg True
 
   return (Ranking (ranked ++ remaining)
-                  (guard (quitOnEmpty && null ranked) *> Just ApplySorry))
+                  (guard (quitOnEmpty && not (null inp) && null ranked) *> Just ApplySorry))
   where
     pgoal (g,(_nr,_usefulness)) = prettyGoal g
 

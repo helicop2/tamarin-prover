@@ -1,19 +1,13 @@
-theory ChannelsTestThree begin
+theory ChannelsTestThree
+
+begin
 
 // Function signature and definition of the equational theory E
 
 functions: fst/1, pair/2, snd/1
 equations: fst(<x.1, x.2>) = x.1, snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
-
-
-
-
-
-
 
 lemma not_secret:
   exists-trace "∃ #i #j x. (Received( x ) @ #i) ∧ (!KU( x ) @ #j)"
@@ -43,12 +37,6 @@ solve( State_211( x ) ▶₀ #i )
   SOLVED // trace found
 qed
 
-
-
-
-
-
-
 rule (modulo E) Init[color=#ffffff, process="|", issapicrule,
                      role='Process']:
    [ ] --[ Init( ) ]-> [ State_( ) ]
@@ -61,9 +49,9 @@ rule (modulo E) p_0_[color=#ffffff, process="|", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) P_0_1[color=#ffffff, process="P()", issapicrule,
+rule (modulo E) P_0_1[color=#ffffff, process="P();", issapicrule,
                       role='Process']:
-   [ State_1( ) ] --> [ State_11( ), State_12( ) ]
+   [ State_1( ) ] --> [ State_11( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -121,15 +109,9 @@ rule (modulo E) p_0_1111[color=#6c8040, process="0", issapicrule,
      [ State_1111( a ) ] --> [ ]
   */
 
-rule (modulo E) p_0_12[color=#ffffff, process="0", issapicrule,
-                       role='Process']:
-   [ State_12( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) Q_0_2[color=#ffffff, process="Q()", issapicrule,
+rule (modulo E) Q_0_2[color=#ffffff, process="Q();", issapicrule,
                       role='Process']:
-   [ State_2( ) ] --> [ State_21( ), State_22( ) ]
+   [ State_2( ) ] --> [ State_21( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -189,15 +171,14 @@ rule (modulo E) p_0_2111[color=#807140, process="0", issapicrule,
      [ State_2111( x ) ] --> [ ]
   */
 
-rule (modulo E) p_0_22[color=#ffffff, process="0", issapicrule,
-                       role='Process']:
-   [ State_22( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 restriction in_event:
   "∀ x #t3.
@@ -208,14 +189,25 @@ restriction in_event:
       (∀ #t1 xp.
         (K( xp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x #t3.
+    (ChannelIn( x ) @ #t3) ⇒
+    (∃ #t2.
+      (((K( x ) @ #t2) ∧ (#t2 < #t3)) ∧
+       (∀ #t1. (Event( ) @ #t1) ⇒ ((#t1 < #t2) ∨ (#t3 < #t1)))) ∧
+      (∀ #t1 xp.
+        (K( xp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
+  */
+
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -227,7 +219,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/basic/channels3.spthy
 
   output:          examples/sapic/fast/basic/channels3.spthy.tmp
-  processing time: 0.13s
+  processing time: 0.04s
   
   not_secret (exists-trace): verified (4 steps)
   internal_comm (exists-trace): verified (3 steps)

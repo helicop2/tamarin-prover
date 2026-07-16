@@ -76,14 +76,14 @@ import Theory.Tools.IntruderRules
   ( multisetIntruderRules,
     natIntruderRules,
     specialIntruderRules,
-    subtermIntruderRules,
+    subtermConstructorRules,
     xorIntruderRules,
     destructionRulesAC,
     destructionRulesNoEq
   )
 import Theory.Tools.MessageDerivationChecks
 import Theory.Tools.Wellformedness
-import TheoryObject (diffTheoryConfigBlock, theoryConfigBlock, theoryConfigBlock, chainReductionCheck)
+import TheoryObject (diffTheoryConfigBlock, theoryConfigBlock, theoryConfigBlock, deductionChainCheck)
 
 ------------------------------------------------------------------------------
 -- Theory loading: shared between interactive and batch mode
@@ -112,7 +112,7 @@ theoryLoadFlags =
       "dfs"
       ["stop-on-trace"]
       (updateArg "stop-on-trace")
-      "DFS|BFS|SEQDFS|NONE"
+      "DFS|BFS|SEQDFS|SORRY|NONE"
       "How to search for traces (default DFS)",
     flagOpt
       "5"
@@ -157,6 +157,10 @@ theoryLoadFlags =
       "FILE"
       ("Path to the oracle heuristic (default '" ++ "./theory_filename.oracle" ++ "', fallback '" ++ "./oracle" ++ "')"),
     flagNone
+      ["oracle-only"]
+      (addEmptyArg "oracle-only")
+      "When set, the oracle heuristic will stop proof search if the oracle does not rank any proof goals.",
+    flagNone
       ["quiet"]
       (addEmptyArg "quiet")
       "Do not display computation steps of oracle or tactic.",
@@ -197,7 +201,11 @@ theoryLoadFlags =
       ["replication-bound"]
       (updateArg "replication-bound")
       "INT"
-      "Replication bound for DeepSec export"
+      "Replication bound for DeepSec export",
+    flagNone
+      ["no-ndc"]
+      (addEmptyArg "no-ndc")
+      "Deactivate the no deconstruction chain (NDC) check (enabled by default)"
   ]
 
 -----------------------------------------------
@@ -210,6 +218,7 @@ data TheoryLoadOptions = TheoryLoadOptions
     stopOnTrace :: Maybe SolutionExtractor,
     proofBound :: Maybe Int,
     heuristic :: Maybe (Heuristic ProofContext),
+    oracleOnly :: Bool,
     partialEvaluation :: Maybe EvaluationStyle,
     defines :: [String],
     diffMode :: Bool,
@@ -225,7 +234,8 @@ data TheoryLoadOptions = TheoryLoadOptions
     derivationChecks :: Int,
     noReuse :: Bool,
     noRestrictions :: Bool,
-    replicationBound :: Int
+    replicationBound :: Int,
+    ndcCheck :: Bool -- ^ Whether to run the no deconstruction chain (NDC) check (enabled by default).
   }
   deriving (Show)
 
@@ -237,6 +247,7 @@ defaultTheoryLoadOptions =
       stopOnTrace = Nothing,
       proofBound = Nothing,
       heuristic = Nothing,
+      oracleOnly = False,
       partialEvaluation = Nothing,
       defines = [],
       diffMode = False,
@@ -252,7 +263,8 @@ defaultTheoryLoadOptions =
       derivationChecks = 5,
       noReuse = False,
       noRestrictions = False,
-      replicationBound = 3
+      replicationBound = 3,
+      ndcCheck = True
     }
 
 toParserFlags :: TheoryLoadOptions -> [String]
@@ -273,6 +285,7 @@ mkTheoryLoadOptions as =
     <*> stopOnTrace as
     <*> proofBound
     <*> heuristic
+    <*> oracleOnly
     <*> partialEvaluation
     <*> defines
     <*> diffMode
@@ -289,6 +302,7 @@ mkTheoryLoadOptions as =
     <*> noReuse
     <*> noRestrictions
     <*> replicationBound
+    <*> ndcCheck
   where
     proveMode = pure $ argExists "prove" as
     lemmaNames = pure $ findArg "prove" as ++ findArg "lemma" as
@@ -317,6 +331,7 @@ mkTheoryLoadOptions as =
       name -> name
     -- toGoalRanking | argExists "diff" as = stringToGoalRankingDiff
     --              | otherwise           = stringToGoalRanking
+    oracleOnly = pure $ argExists "oracle-only" as
 
     partialEvaluation = case map toLower <$> findArg "partial-evaluation" as of
       Just "summary" -> pure $ Just Summary
@@ -331,6 +346,8 @@ mkTheoryLoadOptions as =
     autoSources = pure $ argExists "auto-sources" as
     noReuse = pure $ argExists "no-reuse" as
     noRestrictions = pure $ argExists "no-restrictions" as
+    -- The NDC check is enabled by default; --no-ndc deactivates it.
+    ndcCheck = pure $ not $ argExists "no-ndc" as
 
     outputModule = case findArg "outModule" as of
       Just str -> case find ((str ==) . show) [minBound ..] of
@@ -362,6 +379,7 @@ stopOnTrace as = case map toLower <$> findArg "stop-on-trace" as of
   Just "none" -> pure $ Just CutNothing
   Just "bfs" -> pure $ Just CutBFS
   Just "seqdfs" -> pure $ Just CutSingleThreadDFS
+  Just "sorry" -> pure $ Just CutAfterSorry
   Just unknown -> throwError $ ArgumentError ("unknown stop-on-trace method: " ++ unknown)
   Nothing -> pure Nothing
 
@@ -481,50 +499,53 @@ translateTheory thyOpts thy = do
     withTheory f = bitraverse f pure
     theoryName = either (._thyName) (._diffThyName)
 
-checkCloseIntrRule :: SignatureWithMaude -> String -> OpenTranslatedTheory -> OpenTranslatedTheory
-checkCloseIntrRule sign name thy = thy {_thyCache = intrRulesACred}
+-- | Closes the intruder deduction rules and applies the no deconstruction chain check if enabled.
+checkCloseIntrRule :: SignatureWithMaude -> String -> OpenTranslatedTheory -> (SignatureWithMaude, OpenTranslatedTheory)
+checkCloseIntrRule sign name thy = (sigWithMaude', thy {_thyCache = intrRulesACred, _thySignature = sig'})
   where
     hnd = sign._sigMaudeInfo
+    sig = thy._thySignature
 
     intrRules = thy._thyCache
-    intrRulesAC = concat $ map (closeIntrRule hnd) intrRules
 
-    tabT = groupBy ((==) `on` getRuleName) $ sortOn getRuleName intrRulesAC
+    -- do the no deconstruction chain check or not?
+    deductionChainCheckBool = thy._thyOptions._deductionChainCheck
+    ocLimit = thy._thyOptions._openChainsLimit
+    satLimit = thy._thyOptions._saturationLimit
+    ndcChecks = if deductionChainCheckBool then prettyNDCcheck False ocLimit satLimit sign name intrRules else (sign, intrRules)
+    (sigWithMaude', intrRulesACred) = ndcChecks
+    sig' = if deductionChainCheckBool then toSignaturePure sigWithMaude' else sig
 
-    chainReductionBool = (thy._thyOptions)._chainReductionCheck
-
-    intrRulesACred = if chainReductionBool then prettyChainReduction sign name intrRulesAC tabT chainReductionBool else applyChainReduction sign intrRulesAC tabT chainReductionBool
-
-copyLimit :: [IntrRuleAC] -> IntrRuleAC -> IntrRuleAC
-copyLimit d rule@(Rule (DestrRule _ _ _ _) _ _ _ _) = checkDiff d rule
+-- | Closes the intruder deduction rules and applies the no deconstruction chain check if enabled. Version for diff theories.
+checkCloseIntrRuleDiff :: SignatureWithMaude -> String -> OpenDiffTheory -> (SignatureWithMaude, OpenDiffTheory)
+checkCloseIntrRuleDiff sign name diffThy = if deductionChainCheckBool then (sigWithMaude'', diffCRThy) else (sign, diffThy)
   where
-    checkDiff (d1:dq) r = if (getRuleName r == getRuleName d1) && (enumPrems d1 == enumPrems r) && (enumConcs d1 == enumConcs r) then d1 else checkDiff dq r
-    checkDiff [] r = r
-copyLimit _ rule = rule
+    -- hnd = sign._sigMaudeInfo
+    -- sig = diffThy._diffThySignature
 
-checkCloseIntrRuleDiff :: SignatureWithMaude -> String -> OpenDiffTheory -> OpenDiffTheory
-checkCloseIntrRuleDiff sign name diffthy = diffCLthy {_diffThyCacheRight = clACred}
+    dcl = diffThy._diffThyDiffCacheLeft
+    cl  = diffThy._diffThyCacheLeft
 
-  where
-    hnd = sign._sigMaudeInfo
+    -- do the no deconstruction chain check or not?
+    deductionChainCheckBool = diffThy._diffThyOptions._deductionChainCheck
+    ocLimit = diffThy._diffThyOptions._openChainsLimit
+    satLimit = diffThy._diffThyOptions._saturationLimit
 
-    dcl = diffthy._diffThyDiffCacheLeft 
-    cl = diffthy._diffThyCacheLeft
+    -- we need to do the NDC check for trace and equivalence mode separately:
+    -- the NDC attribute governs the trace intruder rules, NDC-diff the diff intruder rules
+    ndcChecksTrace = prettyNDCcheck False ocLimit satLimit sign name cl
+    (sigWithMaude', clACred) = ndcChecksTrace
 
-    dclAC = concat $ map (closeIntrRule hnd) dcl
-    clAC = concat $ map (closeIntrRule hnd) cl
+    -- FIXME : should we copy the trace NDC over to the diff rule caches ?
+    ndcChecksDiff = prettyNDCcheck True ocLimit satLimit sigWithMaude' name dcl
+    (sigWithMaude'', dclACred) = ndcChecksDiff
+    sig'' = toSignaturePure sigWithMaude''
 
-    tabTDCL = groupBy ((==) `on` getRuleName) $ sortOn getRuleName dclAC
+    diffDCLThy = diffThy    {_diffThyDiffCacheLeft = dclACred, _diffThySignature = sig''}  -- diffThySignature is the same for both sides, so we can just update it once
+    diffDCRThy = diffDCLThy {_diffThyDiffCacheRight = dclACred}  -- diffThyDiffCacheLeft and diffThyDiffCacheRight contain the same Intruder Rules, so we use the same list of closed intruder rules for both sides
 
-    chainReductionBool = (diffthy._diffThyOptions)._chainReductionCheck
-
-    dclACred = if chainReductionBool then prettyChainReduction sign name dclAC tabTDCL chainReductionBool else applyChainReduction sign dclAC tabTDCL chainReductionBool
-    diffDCLthy = diffthy {_diffThyDiffCacheLeft = dclACred} 
-
-    diffDCRthy = diffDCLthy {_diffThyDiffCacheRight = dclACred}  -- diffThyDiffCacheLeft and diffThyDiffCacheRight are same Intruder Rules
-
-    clACred = map (copyLimit dclACred) clAC
-    diffCLthy = diffDCRthy {_diffThyCacheLeft = clACred}  -- diffThyCacheLeft and diffThyCacheRight are same Intruder Rules
+    diffCLThy = diffDCRThy {_diffThyCacheLeft = clACred}
+    diffCRThy = diffCLThy  {_diffThyCacheRight = clACred}  -- diffThyCacheLeft and diffThyCacheRight contain the same Intruder Rules, so we use the same list of closed intruder rules for both sides
 
 -- | Perform wellformedness and deducability checks on a theory.
 checkTranslatedTheory ::
@@ -532,7 +553,7 @@ checkTranslatedTheory ::
   TheoryLoadOptions ->
   SignatureWithMaude ->
   Either OpenTranslatedTheory OpenDiffTheory ->
-  m (WfErrorReport, Either OpenTranslatedTheory OpenDiffTheory)
+  m (WfErrorReport, SignatureWithMaude, Either OpenTranslatedTheory OpenDiffTheory)
 checkTranslatedTheory thyOpts sign thy = do
   let transReport =
         either
@@ -542,13 +563,15 @@ checkTranslatedTheory thyOpts sign thy = do
 
   deducThy0 <- bitraverse (\x -> return ((addMessageDeductionRuleVariants x) `runReader` (mh)))
                           (\x -> return ((addMessageDeductionRuleVariantsDiff x) `runReader` (mh))) thy
- 
-  deducThy <- bitraverse (liftIO . evaluate . force . (checkCloseIntrRule sign (theoryName thy))) (liftIO . evaluate . force . (checkCloseIntrRuleDiff sign (theoryName thy))) deducThy0
---  let deducThy =
---        bimap
---          addMessageDeductionRuleVariants
---          addMessageDeductionRuleVariantsDiff
---          thy
+
+  deducThyAndSig <- bitraverse (liftIO . evaluate . force . (checkCloseIntrRule sign (theoryName thy))) (liftIO . evaluate . force . (checkCloseIntrRuleDiff sign (theoryName thy))) deducThy0
+
+  let deducThy = case deducThyAndSig of
+        Left (_, thy') -> Left thy'
+        Right (_, diffThy') -> Right diffThy'
+      signWithMaude = case deducThyAndSig of
+        Left (sigWithMaude', _) -> sigWithMaude'
+        Right (sigWithMaude', _) -> sigWithMaude'
 
   variableReport <- case compare derivChecks 0 of
     EQ -> pure $ Just []
@@ -563,15 +586,15 @@ checkTranslatedTheory thyOpts sign thy = do
           timeout (1000000 * derivChecks) $
             evaluate . force $
               either
-                (\t -> checkVariableDeducability t derivCheckSignature autoSources defaultProver)
-                (\t -> diffCheckVariableDeducability t derivCheckSignature autoSources defaultProver defaultDiffProver)
+                (\t -> checkVariableDeducibility t derivCheckSignature autoSources defaultProver)
+                (\t -> diffCheckVariableDeducibility t derivCheckSignature autoSources defaultProver defaultDiffProver)
                 deducThy
       traceM ("[Theory " ++ theoryName thy ++ "] Derivation checks ended")
       pure rep
 
   let report = transReport ++ fromMaybe derivTimeoutMsg variableReport
 
-  pure (report, deducThy)
+  pure (report, signWithMaude, deducThy)
   where
     mh = sign._sigMaudeInfo
     incompleteMSRs = False -- TODO how do we know if we do not have all MSRs due to translation?
@@ -598,11 +621,11 @@ checkTranslatedTheory thyOpts sign thy = do
           , irreducibleFunSyms = makepublicsym (irreducibleFunSyms s._sigMaudeInfo)
           , reducibleFunSyms = makepublicsym (reducibleFunSyms s._sigMaudeInfo)
           }
-    makepublic = Data.Set.map (\(name, (int, _, construct)) -> (name, (int, Public, construct)))
-    makepublicAC = Data.Set.map (\(name, (_, construct)) -> (name,(Public, construct)))
+    makepublic = Data.Set.map (\(name, (int, _, construct, ndc)) -> (name, (int, Public, construct, ndc)))
+    makepublicAC = Data.Set.map (\(name, (_, construct, ndc)) -> (name,(Public, construct, ndc)))
     makepublicsym  = Data.Set.map $ \case
-      NoEq (name, (int, _, constr)) -> NoEq (name,(int, Public, constr))
-      AC (ACfct (name, (_, constr))) -> AC (ACfct (name,(Public, constr)))
+      NoEq (name, (int, _, constr, ndc)) -> NoEq (name,(int, Public, constr, ndc))
+      AC (ACfct (name, (_, constr, ndc))) -> AC (ACfct (name,(Public, constr, ndc)))
       x -> x
 
     theoryName = either (._thyName) (._diffThyName)
@@ -700,8 +723,8 @@ closeTheory ::
 closeTheory version loadedThyOpts sign srcThy = do
   (preReport, transThy) <- translateTheory thyOpts srcThy
   let removedThy = first removeTranslationItems transThy
-  (postReport, checkedThy) <- checkTranslatedTheory thyOpts sign removedThy
-  closedThy <- closeTranslatedTheory thyOpts sign checkedThy
+  (postReport, sign', checkedThy) <- checkTranslatedTheory thyOpts sign removedThy
+  closedThy <- closeTranslatedTheory thyOpts sign' checkedThy
   finalThy <- withVersionAndReport version thyOpts (preReport ++ postReport) closedThy
 
   pure (preReport ++ postReport, finalThy)
@@ -750,7 +773,7 @@ translateAndCheckTheory ::
 translateAndCheckTheory version thyOpts sign srcThy = do
   (preReport, transThy) <- translateTheory thyOpts srcThy
   let removedThy = first removeTranslationItems transThy
-  (postReport, _) <- checkTranslatedTheory thyOpts sign removedThy
+  (postReport, _, _) <- checkTranslatedTheory thyOpts sign removedThy
   finalThy <- withVersionAndReport version thyOpts (preReport ++ postReport) transThy
   pure (preReport ++ postReport, finalThy)
 
@@ -778,7 +801,7 @@ constructAutoProver thyOpts =
     Nothing
     thyOpts.proofBound
     (fromMaybe CutDFS thyOpts.stopOnTrace)
-    False
+    thyOpts.oracleOnly
 
 -----------------------------------------------
 -- Add Options parameters in an OpenTheory
@@ -789,8 +812,12 @@ addParamsOptions ::
   TheoryLoadOptions ->
   Either OpenTheory OpenDiffTheory ->
   Either OpenTheory OpenDiffTheory
-addParamsOptions opt = addVerboseOptions . addPrecomputationOnlyOptions . addSatArg . addChainsArg . addLemmaToProve
+addParamsOptions opt = addVerboseOptions . addPrecomputationOnlyOptions . addSatArg . addChainsArg . addLemmaToProve . addNdcOption
   where
+    -- Add the no deconstruction chain (NDC) check parameter in the Options
+    _deductionChainCheck = opt.ndcCheck
+    addNdcOption (Left thy) = Left thy {_thyOptions = thy._thyOptions {_deductionChainCheck}}
+    addNdcOption (Right diffThy) = Right diffThy {_diffThyOptions = diffThy._diffThyOptions {_deductionChainCheck}}
     -- Add Open Chain Limit parameters in the Options
     _openChainsLimit = opt.openChain
     addChainsArg (Left thy) = Left thy {_thyOptions = thy._thyOptions {_openChainsLimit}}
@@ -856,7 +883,7 @@ addMessageDeductionRuleVariants thy0
   | otherwise = thy
   where
     msig = thy0._thySignature._sigMaudeInfo --get (sigpMaudeSig . thySignature) thy0
-    rules0 = reader $ \hnd -> subtermIntruderRules False hnd msig ++ specialIntruderRules False
+    rules0 = reader $ \hnd -> subtermConstructorRules False hnd msig ++ specialIntruderRules False
                    ++ (if enableMSet msig then multisetIntruderRules else [])
                    ++ (if enableXor msig then xorIntruderRules else [])
     rulesAC = (destructionRulesAC False (acUserFunSyms msig))
@@ -875,7 +902,7 @@ addMessageDeductionRuleVariantsWithoutMaude thy0
   | otherwise     = thy
   where
     msig         = thy0._thySignature._sigMaudeInfo
-    rules        = specialIntruderRules False -- subtermIntruderRules False hnd msig ++ 
+    rules        = specialIntruderRules False -- subtermConstructorRules False hnd msig ++ 
                    ++ (if enableMSet msig then multisetIntruderRules else [])
                    ++ (if enableXor msig then xorIntruderRules else [])
     thy          = addIntrRuleACsAfterTranslate rules thy0
@@ -895,18 +922,18 @@ addMessageDeductionRuleVariantsDiff thy0
   | otherwise = thy >>= \x -> return (addIntrRuleLabels x)
   where
     msig = thy0._diffThySignature._sigMaudeInfo
-    rules0 diff' = reader $ \hnd -> subtermIntruderRules diff' hnd msig
+    rules0 diff' = reader $ \hnd -> subtermConstructorRules diff' hnd msig
         ++ specialIntruderRules diff'
         ++ (if enableNat msig then natIntruderRules else [])
         ++ (if enableMSet msig then multisetIntruderRules else [])
         ++ (if enableXor msig then xorIntruderRules else [])
     rulesAC diff' = (destructionRulesAC diff' (acUserFunSyms msig))
-    rulesNoEq diff' = (destructionRulesNoEq diff' (noEqFunSyms msig))
+    rulesNoEq diff' =  (destructionRulesNoEq diff' (noEqFunSyms msig))
     rulesACNoEq diff' = liftA2 (++) (rulesAC diff') (rulesNoEq diff')
     rules diff' = liftA2 (++) (rules0 diff') (rulesACNoEq diff')
     bothDiffTh = rules True >>= \x -> return (addIntrRuleACsDiffBothDiff x thy0)
     thy = rules False >>= (\x -> (bothDiffTh >>= (return . addIntrRuleACsDiffBoth x)))
-    addIntruderVariantsDiff mkRuless = thy >>= (\x -> return 
-      (addIntrRuleLabels $ 
-        addIntrRuleACsDiffBothDiff (concatMap ($ msig) mkRuless) 
+    addIntruderVariantsDiff mkRuless = thy >>= (\x -> return
+      (addIntrRuleLabels $
+        addIntrRuleACsDiffBothDiff (concatMap ($ msig) mkRuless)
         (addIntrRuleACsDiffBoth (concatMap ($ msig) mkRuless) x)))

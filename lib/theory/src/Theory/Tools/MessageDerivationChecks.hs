@@ -1,6 +1,6 @@
 module Theory.Tools.MessageDerivationChecks (
-      checkVariableDeducability
-    , diffCheckVariableDeducability
+      checkVariableDeducibility
+    , diffCheckVariableDeducibility
 ) where
 
 import  Theory.Model.Formula
@@ -33,8 +33,8 @@ import OpenTheory
 -----------------------------------------------
 
 
-checkVariableDeducability :: OpenTranslatedTheory -> SignatureWithMaude -> Bool -> Prover -> WfErrorReport
-checkVariableDeducability thy sig sources prover =
+checkVariableDeducibility :: OpenTranslatedTheory -> SignatureWithMaude -> Bool -> Prover -> WfErrorReport
+checkVariableDeducibility thy sig sources prover =
     reportVars (map checkProofStatuses provenTheories) originalRules freeVars
     where
         originalRules = map (applyMacroInProtoRule (theoryMacros thy)) $ theoryRules thy
@@ -42,15 +42,15 @@ checkVariableDeducability thy sig sources prover =
         closedTheories = map (\t -> closeTheoryWithMaude sig t sources False) modifiedTheories
         modifiedTheories =  zipWith3 (\r l t -> (addRules [r] . addLemmas l ) t)  newRules newLemmas (repeat emptyPublicThy)
         emptyPublicThy = L.set thyOptions newOptions emptyPublicThy0
-        newOptions =  L.set chainReductionCheck False (L.get thyOptions emptyPublicThy0)
+        newOptions =  L.set deductionChainCheck False (L.get thyOptions emptyPublicThy0)
         emptyPublicThy0 = makeFunsPublic (toSignaturePure sig) $ deleteRulesAndLemmasAndRestrictionsFromTheory thy
         newRules = zipWith3 (\idx freevs prems -> generateRule freevs (premisesToOut prems) idx) [0..] freeVars premises
         newLemmas = zipWith3 (\idx freevs _-> generateSeparatedLemmas idx freevs) [0..] freeVars premises
         premises = map (map (fmap replacePrivate)) $ premsOfThyRules originalRules
         freeVars = freesInThyRules originalRules
 
-diffCheckVariableDeducability :: OpenDiffTheory -> SignatureWithMaude -> Bool -> Prover -> DiffProver -> WfErrorReport
-diffCheckVariableDeducability thy sig sources prover diffprover =
+diffCheckVariableDeducibility :: OpenDiffTheory -> SignatureWithMaude -> Bool -> Prover -> DiffProver -> WfErrorReport
+diffCheckVariableDeducibility thy sig sources prover diffprover =
     reportDiffVars (map checkDiffProofStatuses provenTheories) originalRules freeVars
     where
         originalRules = diffTheoryDiffRules thy
@@ -96,8 +96,8 @@ deleteRulesAndLemmasAndRestrictionsFromTheory = L.modify thyItems deleteRules
 
 replacePrivate :: Term t -> Term t
 replacePrivate t = case viewTerm t of
-    FApp (NoEq (num,(name,Private,constr))) term  -> termViewToTerm $ FApp (NoEq (num, (name, Public, constr))) (map replacePrivate term)
-    FApp (AC (ACfct (num,(Private,constr)))) term  -> termViewToTerm $ FApp (AC (ACfct (num, (Public, constr)))) (map replacePrivate term)
+    FApp (NoEq (num,(name,Private,constr,ndc))) term  -> termViewToTerm $ FApp (NoEq (num, (name, Public, constr, ndc))) (map replacePrivate term)
+    FApp (AC (ACfct (num,(Private,constr,ndc)))) term  -> termViewToTerm $ FApp (AC (ACfct (num, (Public, constr, ndc)))) (map replacePrivate term)
     FApp sym as -> termViewToTerm $ FApp sym (map replacePrivate as)
     x -> termViewToTerm x
 
@@ -155,7 +155,10 @@ reportDiffVars analysisresults rules vars = case rulesAndVars of
 -----------------------------------------------
 
 freesInThyRules :: [OpenProtoRule] -> [[LVar]]
-freesInThyRules = map (frees . L.get oprRuleE)
+freesInThyRules =
+    -- Timepoint variables such as #NOW come from _restrict annotations but
+    -- are not message variables we need to prove deducible.
+    map (filter ((/= LSortNode) . lvarSort) . frees . L.get oprRuleE)
 
 premsOfThyRules :: [OpenProtoRule] -> [[LNFact]]
 premsOfThyRules = map (L.get rPrems . L.get oprRuleE)
@@ -171,7 +174,7 @@ generateAction :: [LVar] ->Int -> LNFact
 generateAction vars idx = protoFact Persistent ("Generated_" ++ show idx) (map lvarToLnterm (deleteGlobals vars))
 
 generateSeparatedLemmas :: Int -> [LVar]-> [ProtoLemma (ProtoFormula Unit2 (String, LSort) Name LVar) (Proof ())]
-generateSeparatedLemmas idx vars = map (\v -> Lemma (show v) "message_deriv" False ExistsTrace (existsTimeFormula $ existFormula $ landFormula $ generateAction vars idx : [(lntermToKUFact (lvarToLnterm v))]) [] (unproven ())) vars
+generateSeparatedLemmas idx vars = map (\v -> Lemma (show v) "message_deriv" False ExistsTrace (existsTimeFormula $ existFormula $ landFormula $ generateAction vars idx : [(lntermToKUFact (lvarToLnterm v))]) Nothing [] (unproven ())) vars
 
 deleteGlobals :: [LVar] -> [LVar]
 deleteGlobals = filter (\v -> lvarSort v /= LSortPub)
@@ -187,12 +190,6 @@ landFormula facts = foldl (\ fm (idx, fact) -> fm .&&. Ato (Action (LIT (Var (Fr
 premisesToOut :: [LNFact] -> [LNFact]
 premisesToOut =  map (outFact . natToFreshVars) . concatMap factTerms
 
--- Convenience functions for converting vars/terms
-freeLNTerm :: LVar -> BVar LVar
-freeLNTerm = Free
-
-freeTerm :: LNTerm -> Term (Lit Name (BVar LVar))
-freeTerm =  fmap (fmap freeLNTerm)
 
 freeFact :: LNFact ->  Fact (Term (Lit Name (BVar LVar)))
 freeFact = fmap freeTerm

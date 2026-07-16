@@ -1,4 +1,6 @@
-theory StatVerifSecurityDevice begin
+theory StatVerifSecurityDevice
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -8,17 +10,7 @@ equations:
     fst(<x.1, x.2>) = x.1,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
-
-
-
-
-
-
-
-
 
 lemma source [sources]:
   all-traces
@@ -1616,18 +1608,6 @@ solve( State_111121111( x, y, s, sk ) ▶₀ #i )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
 rule (modulo E) Init[color=#ffffff, process="!", issapicrule,
                      role='Process']:
    [ ] --[ Init( ) ]-> [ State_( ) ]
@@ -1696,18 +1676,14 @@ rule (modulo E) p_0_1111[color=#ffffff, process="|", issapicrule,
      [ State_11111( s, sk ), State_11112( s, sk ) ]
   */
 
-rule (modulo E) Device_0_11111[color=#ffffff, process="Device()",
+rule (modulo E) Device_0_11111[color=#ffffff, process="Device();",
                                issapicrule, role='Process']:
-   [ State_11111( s.1, sk.1 ) ]
-  -->
-   [ State_111111( s.1, sk.1 ), State_111112( s.1, sk.1 ) ]
+   [ State_11111( s.1, sk.1 ) ] --> [ State_111111( s.1, sk.1 ) ]
 
   /*
-  rule (modulo AC) Device_0_11111[color=#ffffff, process="Device()",
+  rule (modulo AC) Device_0_11111[color=#ffffff, process="Device();",
                                   issapicrule, role='Process']:
-     [ State_11111( s, sk ) ]
-    -->
-     [ State_111111( s, sk ), State_111112( s, sk ) ]
+     [ State_11111( s, sk ) ] --> [ State_111111( s, sk ) ]
   */
 
 rule (modulo E) p_0_111111[color=#708040, process="|", issapicrule,
@@ -1810,7 +1786,7 @@ rule (modulo E) inreq_0_1111112111[color=#708040, process="in(req.1);",
 
 rule (modulo E) lookupFstatussasstatus_0_11111121111[color=#708040,
                                                      process="lookup <'F_status', s.1> as status.1",
-                                                     derivchecks, issapicrule, role='Device']:
+                                                     no_derivcheck, issapicrule, role='Device']:
    [ State_11111121111( lock, req.1, s.1, sk.1 ) ]
   --[ IsIn( <'F_status', s.1>, status.1 ) ]->
    [ State_111111211111( lock, req.1, s.1, sk.1, status.1 ) ]
@@ -1818,7 +1794,7 @@ rule (modulo E) lookupFstatussasstatus_0_11111121111[color=#708040,
   /*
   rule (modulo AC) lookupFstatussasstatus_0_11111121111[color=#708040,
                                                         process="lookup <'F_status', s.1> as status.1",
-                                                        derivchecks, issapicrule, role='Device']:
+                                                        no_derivcheck, issapicrule, role='Device']:
      [ State_11111121111( lock, req, s, sk ) ]
     --[ IsIn( <'F_status', s>, status ) ]->
      [ State_111111211111( lock, req, s, sk, status ) ]
@@ -1826,7 +1802,7 @@ rule (modulo E) lookupFstatussasstatus_0_11111121111[color=#708040,
 
 rule (modulo E) lookupFstatussasstatus_1_11111121111[color=#708040,
                                                      process="lookup <'F_status', s.1> as status.1",
-                                                     derivchecks, issapicrule, role='Device']:
+                                                     no_derivcheck, issapicrule, role='Device']:
    [ State_11111121111( lock, req.1, s.1, sk.1 ) ]
   --[ IsNotSet( <'F_status', s.1> ) ]->
    [ State_111111211112( lock, req.1, s.1, sk.1 ) ]
@@ -1834,7 +1810,7 @@ rule (modulo E) lookupFstatussasstatus_1_11111121111[color=#708040,
   /*
   rule (modulo AC) lookupFstatussasstatus_1_11111121111[color=#708040,
                                                         process="lookup <'F_status', s.1> as status.1",
-                                                        derivchecks, issapicrule, role='Device']:
+                                                        no_derivcheck, issapicrule, role='Device']:
      [ State_11111121111( lock, req, s, sk ) ]
     --[ IsNotSet( <'F_status', s> ) ]->
      [ State_111111211112( lock, req, s, sk ) ]
@@ -2124,7 +2100,7 @@ rule (modulo E) inaencxypksk_0_11111121211[color=#708040,
 
 rule (modulo E) lookupFstatussasstatus_0_111111212111[color=#708040,
                                                       process="lookup <'F_status', s.1> as status.2",
-                                                      derivchecks, issapicrule, role='Device']:
+                                                      no_derivcheck, issapicrule, role='Device']:
    [ State_111111212111( lock.1, s.1, sk.1, x.1, y.1 ) ]
   --[ IsIn( <'F_status', s.1>, status.2 ) ]->
    [ State_1111112121111( lock.1, s.1, sk.1, x.1, y.1, status.2 ) ]
@@ -2132,7 +2108,7 @@ rule (modulo E) lookupFstatussasstatus_0_111111212111[color=#708040,
   /*
   rule (modulo AC) lookupFstatussasstatus_0_111111212111[color=#708040,
                                                          process="lookup <'F_status', s.1> as status.2",
-                                                         derivchecks, issapicrule, role='Device']:
+                                                         no_derivcheck, issapicrule, role='Device']:
      [ State_111111212111( lock, s, sk, x, y ) ]
     --[ IsIn( <'F_status', s>, status ) ]->
      [ State_1111112121111( lock, s, sk, x, y, status ) ]
@@ -2140,7 +2116,7 @@ rule (modulo E) lookupFstatussasstatus_0_111111212111[color=#708040,
 
 rule (modulo E) lookupFstatussasstatus_1_111111212111[color=#708040,
                                                       process="lookup <'F_status', s.1> as status.2",
-                                                      derivchecks, issapicrule, role='Device']:
+                                                      no_derivcheck, issapicrule, role='Device']:
    [ State_111111212111( lock.1, s.1, sk.1, x.1, y.1 ) ]
   --[ IsNotSet( <'F_status', s.1> ) ]->
    [ State_1111112121112( lock.1, s.1, sk.1, x.1, y.1 ) ]
@@ -2148,7 +2124,7 @@ rule (modulo E) lookupFstatussasstatus_1_111111212111[color=#708040,
   /*
   rule (modulo AC) lookupFstatussasstatus_1_111111212111[color=#708040,
                                                          process="lookup <'F_status', s.1> as status.2",
-                                                         derivchecks, issapicrule, role='Device']:
+                                                         no_derivcheck, issapicrule, role='Device']:
      [ State_111111212111( lock, s, sk, x, y ) ]
     --[ IsNotSet( <'F_status', s> ) ]->
      [ State_1111112121112( lock, s, sk, x, y ) ]
@@ -2360,16 +2336,6 @@ rule (modulo E) p_0_1111112121112[color=#708040, process="0",
      [ State_1111112121112( lock, s, sk, x, y ) ] --> [ ]
   */
 
-rule (modulo E) p_0_111112[color=#ffffff, process="0", issapicrule,
-                           role='Process']:
-   [ State_111112( s.1, sk.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_111112[color=#ffffff, process="0", issapicrule,
-                              role='Process']:
-     [ State_111112( s, sk ) ] --> [ ]
-  */
-
 rule (modulo E) p_0_11112[color=#ffffff, process="!", issapicrule,
                           role='Process']:
    [ State_11112( s.1, sk.1 ) ] --> [ !Semistate_111121( s.1, sk.1 ) ]
@@ -2390,18 +2356,14 @@ rule (modulo E) p_1_11112[color=#ffffff, process="!", issapicrule,
      [ !Semistate_111121( s, sk ) ] --> [ State_111121( s, sk ) ]
   */
 
-rule (modulo E) User_0_111121[color=#ffffff, process="User()",
+rule (modulo E) User_0_111121[color=#ffffff, process="User();",
                               issapicrule, role='Process']:
-   [ State_111121( s.1, sk.1 ) ]
-  -->
-   [ State_1111211( s.1, sk.1 ), State_1111212( s.1, sk.1 ) ]
+   [ State_111121( s.1, sk.1 ) ] --> [ State_1111211( s.1, sk.1 ) ]
 
   /*
-  rule (modulo AC) User_0_111121[color=#ffffff, process="User()",
+  rule (modulo AC) User_0_111121[color=#ffffff, process="User();",
                                  issapicrule, role='Process']:
-     [ State_111121( s, sk ) ]
-    -->
-     [ State_1111211( s, sk ), State_1111212( s, sk ) ]
+     [ State_111121( s, sk ) ] --> [ State_1111211( s, sk ) ]
   */
 
 rule (modulo E) newlm_0_1111211[color=#80406c, process="new lm.1;",
@@ -2475,16 +2437,6 @@ rule (modulo E) p_0_11112111111[color=#80406c, process="0", issapicrule,
      [ State_11112111111( lm, rm, s, sk ) ] --> [ ]
   */
 
-rule (modulo E) p_0_1111212[color=#ffffff, process="0", issapicrule,
-                            role='Process']:
-   [ State_1111212( s.1, sk.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_1111212[color=#ffffff, process="0", issapicrule,
-                               role='Process']:
-     [ State_1111212( s, sk ) ] --> [ ]
-  */
-
 restriction set_in:
   "∀ x y #t3.
     (IsIn( x, y ) @ #t3) ⇒
@@ -2493,22 +2445,53 @@ restriction set_in:
       (∀ #t1 yp.
         (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x y #t3.
+    (IsIn( x, y ) @ #t3) ⇒
+    (∃ #t2.
+      ((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ∧
+      (∀ #t1 yp.
+        (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
+  */
+
 restriction set_notin:
   "∀ x #t3.
     (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #t3.
+    (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
+  */
+
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 restriction locking_0:
   "∀ p pp l x lp #t1 #t3.
@@ -2526,6 +2509,24 @@ restriction locking_0:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_0( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_0( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_1:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -2542,19 +2543,32 @@ restriction locking_1:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_1( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -2566,10 +2580,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/statVerifLeftRight/stateverif_left_right.spthy
 
   output:          examples/sapic/fast/statVerifLeftRight/stateverif_left_right.spthy.tmp
-  processing time: 6.03s
-  
-  WARNING: 1 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 3.20s
   
   source (all-traces): verified (171 steps)
   reachability_left (exists-trace): verified (14 steps)

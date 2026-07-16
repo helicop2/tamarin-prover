@@ -57,6 +57,7 @@ module Theory.Model.Formula (
   , mapAtoms
   , foldFormula
   , traverseFormulaAtom
+  , applyMacroInFormula
 
   -- ** Normal forms / simplification
   , simplifyFormula
@@ -95,6 +96,7 @@ import           Text.PrettyPrint.Highlight
 import           Theory.Text.Pretty
 
 import           Term.LTerm
+import           Term.Macro
 import           Term.Substitution
 
 ------------------------------------------------------------------------------
@@ -307,17 +309,27 @@ openFormulaPrefix f0 = case openFormula f0 of
         _ -> return (reverse xs, q, f)
 
 
+
+-- | Apply macros to a formula
+applyMacroInFormula :: [LNMacro] -> LNFormula -> LNFormula
+applyMacroInFormula [] fm = fm
+applyMacroInFormula macros fm = mapAtoms (const (fmap (applyMacros (lnMacrosToBNMacros macros)))) fm
+
 -- Instances
 ------------
 
 instance HasFrees LNFormula where
+    {-# INLINABLE foldFrees #-}
     foldFrees  f = foldMap  (foldFrees  f)
     foldFreesOcc _ _ = const mempty -- we ignore occurences in Formulas for now
+    {-# INLINABLE mapFrees #-}
     mapFrees   f = traverseFormula (mapFrees   f)
 
 instance HasFrees SyntacticLNFormula where
+    {-# INLINABLE foldFrees #-}
     foldFrees  f = foldMap  (foldFrees  f)
     foldFreesOcc _ _ = const mempty -- we ignore occurences in Formulas for now
+    {-# INLINABLE mapFrees #-}
     mapFrees   f = traverseFormula (mapFrees   f)
 
 instance Apply LNSubst LNFormula where
@@ -518,9 +530,9 @@ prettySyntacticLNFormula fm =
 ------------------------------------------------------------------------------
 
 -- Exists-quantifies every non-time LVar of a formula
-existFormula ::  ProtoFormula Unit2 (String,LSort) Name LVar -> ProtoFormula Unit2 (String,LSort) Name LVar
-existFormula fm = foldl (\ formula var -> exists (lvarName var, lvarSort var) var formula) fm (frees fm)
+existFormula ::  LNFormula -> LNFormula
+existFormula fm = foldl (\formula var -> exists (lvarName var, lvarSort var) var formula) fm (frees fm)
 
 -- Exists-quantifies every non-time LVar of a formula
-forAllFormula ::  ProtoFormula Unit2 (String,LSort) Name LVar -> ProtoFormula Unit2 (String,LSort) Name LVar
-forAllFormula fm = foldl (\ formula var -> forAll (lvarName var, lvarSort var) var formula) fm (frees fm)
+forAllFormula ::  LNFormula -> LNFormula
+forAllFormula fm = foldl (\formula var -> forAll (lvarName var, lvarSort var) var formula) fm (frees fm)

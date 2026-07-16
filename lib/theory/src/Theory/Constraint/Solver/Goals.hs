@@ -22,8 +22,6 @@ module Theory.Constraint.Solver.Goals (
   , plainOpenGoals
   ) where
 
-import           Debug.Trace
-
 import           Prelude                                 hiding (id, (.))
 
 import qualified Data.ByteString.Char8                   as BC
@@ -46,10 +44,9 @@ import           Theory.Constraint.Solver.AnnotatedGoals
 import           Theory.Constraint.Solver.Contradictions (substCreatesNonNormalTerms)
 import           Theory.Constraint.Solver.Reduction
 import           Theory.Constraint.System
-import           Theory.Tools.IntruderRules (mkDUnionRule, isDExpRule, isDPMultRule, isDEMapRule)
+import           Theory.Tools.IntruderRules (mkDUnionRule, isDExpRule, isDPMultRule, isDEMapRule, isNDCRule, isNDCDiffRule)
 import           Theory.Model
 import           Term.Builtin.Convenience
-
 
 import           Utils.Misc                              (twoPartitions)
 
@@ -74,7 +71,7 @@ openGoals ctxt sys = do
         ActionG i (kFactView -> Just (UpK, m)) ->
           if get sDiffSystem sys
              -- In a diff proof, all action goals need to be solved.
-             then not (solved) -- FIXME : || isTrivialACFunSymTerm m ?
+             then not solved
              else
                not $    solved
                     -- message variables are not solved, except if the node already exists in the system -> facilitates finding contradictions
@@ -83,7 +80,7 @@ openGoals ctxt sys = do
                     || sortOfLNTerm m == LSortNat
                     || isTrivialACFunSymTerm m -- do not solve actions that consist of an AC symbol where all arguments are simple msg variables, important for soundness
                     -- handled by 'insertAction'
-                    || isPair m || isInverse m || isProduct m --- || isXor m
+                    || isPair m || isInverse m || isProduct m
                     || isUnion m || isNullaryPublicFunction m
         ActionG _ _                               -> not solved
         PremiseG _ _                              -> not solved
@@ -289,11 +286,12 @@ solveChain :: [RuleAC]              -- ^ All destruction rules.
            -> Reduction String      -- ^ Case name to use.
 solveChain rules (c, p) = do
     faConc  <- gets $ nodeConcFact c
+    isDiffProof <- askM pcDiffContext
     do -- solve it by a direct edge
         cRule <- gets $ nodeRule (nodeConcNode c)
         pRule <- gets $ nodeRule (nodePremNode p)
         faPrem <- gets $ nodePremFact p
-        contradictoryIf (forbiddenEdge cRule pRule)
+        contradictoryIf (forbiddenEdge isDiffProof cRule pRule)
         insertEdges [(c, faConc, faPrem, p)]
         let mPrem = case kFactView faConc of
                       Just (DnK, m') -> m'
@@ -327,7 +325,7 @@ solveChain rules (c, p) = do
                 contradictoryIf (isMsgVar m)
                 cRule <- gets $ nodeRule (nodeConcNode c)
                 (i, ru) <- insertFreshNode rules (Just cRule)
-                contradictoryIf (forbiddenEdge cRule ru)
+                contradictoryIf (forbiddenEdge isDiffProof cRule ru)
                 -- This requires a modified chain constraint def:
                 -- path via first destruction premise of rule ...
                 (v, faPrem) <- disjunctionOfList $ take 1 $ enumPrems ru
@@ -347,12 +345,18 @@ solveChain rules (c, p) = do
     -- to dpmult KD premise, and no edge from dpmult to demap KD premise
     -- (this condition replaces the exp/noexp tags)
     -- no more than the allowed consecutive rule applications
-    forbiddenEdge :: RuleACInst -> RuleACInst -> Bool
-    forbiddenEdge cRule pRule = isDExpRule   cRule && isDExpRule  pRule  ||
-                                isDPMultRule cRule && isDPMultRule pRule ||
-                                isDPMultRule cRule && isDEMapRule  pRule ||
-                                (getRuleName cRule == getRuleName pRule)
-                                    && (getRemainingRuleApplications cRule == 1)
+    -- no consecutive deconstruction rules for NDC functions
+    forbiddenEdge :: Bool -> RuleACInst -> RuleACInst -> Bool
+    forbiddenEdge isDiffProof cRule pRule = (isDExpRule   cRule && isDExpRule  pRule)  ||
+                                (isDPMultRule cRule && isDPMultRule pRule) ||
+                                (isDPMultRule cRule && isDEMapRule  pRule) ||
+                                (getRuleName cRule == getRuleName pRule
+                                    && getRemainingRuleApplications cRule == 1) ||
+                                (if isDiffProof
+                                    then isNDCDiffRule cRule /= Nothing &&
+                                      isNDCDiffRule cRule == isNDCDiffRule pRule
+                                    else isNDCRule cRule /= Nothing &&
+                                      isNDCRule cRule == isNDCRule pRule)
 
     -- Contradicts normal form condition N2:
     -- No coerce of a pair of inverse.

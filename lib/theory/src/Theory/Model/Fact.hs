@@ -187,8 +187,10 @@ instance Sized t => Sized (Fact t) where
   size (Fact _ _ args) = size args
 
 instance HasFrees t => HasFrees (Fact t) where
+    {-# INLINABLE foldFrees #-}
     foldFrees  f = foldMap  (foldFrees f)
     foldFreesOcc f c fa = foldFreesOcc f (show (factTag fa):c) (factTerms fa)
+    {-# INLINABLE mapFrees #-}
     mapFrees   f = traverse (mapFrees f)
 
 instance Apply s t => Apply s (Fact t) where
@@ -243,7 +245,7 @@ isTrivialKUFact (Fact KUFact _ [t]) = isMsgVar t
 isTrivialKUFact _                   = False
 
 -- | True if the fact is a "nearly" trivial KU-fact, i.e., contains a given operator where all arguments are simple msg variables.
-isNearlyTrivialKUFact :: String -> LNFact -> Bool
+isNearlyTrivialKUFact :: FunSym -> LNFact -> Bool
 isNearlyTrivialKUFact s (Fact KUFact _ [t]) = isTrivialFunSymTerm t s
 isNearlyTrivialKUFact _ _                   = False
 
@@ -318,10 +320,9 @@ annotateFact :: S.Set FactAnnotation -> Fact t -> Fact t
 annotateFact ann' (Fact tag ann ts) = Fact tag (S.union ann' ann) ts
 
 -- | Apply macros in fact
-applyMacroInFact :: [Macro] -> LNFact -> LNFact
+applyMacroInFact :: [LNMacro] -> LNFact -> LNFact
 applyMacroInFact mcs (Fact tag annot terms) = let mTerms = map (applyMacros mcs) terms in
                                               Fact tag annot mTerms
-
 
 -- Transforms different kind of facts into the desired form
 freesToFresh :: [LVar] -> [LNFact]
@@ -569,7 +570,7 @@ prettyFact ppTerm (Fact tag an ts)
   | otherwise                     = ppFact (showFactTag tag) ts <> ppAnn an
   where
     ppFact n t = nestShort' (n ++ "(") ")" . fsep . punctuate comma $ map ppTerm t
-    ppAnn ann = if S.null ann then text "" else
+    ppAnn ann = if S.null ann then emptyDoc else
         brackets . fsep . punctuate comma $ map (text . showFactAnnotation) $ S.toList ann
 
 -- | Pretty print a 'NFact'.

@@ -1,4 +1,6 @@
-theory mini9 begin
+theory mini9
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -8,19 +10,9 @@ equations:
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
-
-
 heuristic: p
 
 section{* small example for progression function *}
-
-
-
-
-
-
-
-
 
 lemma A_possible:
   exists-trace "∃ #t. A( ) @ #t"
@@ -123,22 +115,6 @@ solve( State_( ~prog_ ) ▶₀ #t1 )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 rule (modulo E) MessageIDRule[color=#ffffff, process="event Start( );",
                               issapicrule, role='Process']:
    [ Fr( ~mid_ ) ] --> [ MID_Receiver( ~mid_ ), MID_Sender( ~mid_ ) ]
@@ -224,36 +200,73 @@ restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 restriction Progress__to_1111_or_11211:
   "∀ prog_ #t.
     (ProgressFrom_( prog_ ) @ #t) ⇒
     ((∃ #t.1. ProgressTo_1111( prog_ ) @ #t.1) ∨
      (∃ #t.1. ProgressTo_11211( prog_ ) @ #t.1))"
 
+  /*
+  expanded formula:
+  "∀ prog_ #t.
+    (ProgressFrom_( prog_ ) @ #t) ⇒
+    ((∃ #t.1. ProgressTo_1111( prog_ ) @ #t.1) ∨
+     (∃ #t.1. ProgressTo_11211( prog_ ) @ #t.1))"
+  */
+
 restriction Progress__to_12:
   "∀ prog_ #t.
     (ProgressFrom_( prog_ ) @ #t) ⇒ (∃ #t.1. ProgressTo_12( prog_ ) @ #t.1)"
+
+  /*
+  expanded formula:
+  "∀ prog_ #t.
+    (ProgressFrom_( prog_ ) @ #t) ⇒ (∃ #t.1. ProgressTo_12( prog_ ) @ #t.1)"
+  */
 
 restriction Progress_121_to_1211:
   "∀ prog_121 #t.
     (ProgressFrom_121( prog_121 ) @ #t) ⇒
     (∃ #t.1. ProgressTo_1211( prog_121 ) @ #t.1)"
 
+  /*
+  expanded formula:
+  "∀ prog_121 #t.
+    (ProgressFrom_121( prog_121 ) @ #t) ⇒
+    (∃ #t.1. ProgressTo_1211( prog_121 ) @ #t.1)"
+  */
+
 restriction progressInit:
   "∃ #t. Init( ) @ #t"
+
+  /*
+  expanded formula:
+  "∃ #t. Init( ) @ #t"
+  */
 
 restriction reliable:
   "∀ #i x y.
     (Send( x, y ) @ #i) ⇒ (∃ #j. (Receive( x, y ) @ #j) ∧ (#i < #j))"
 
+  /*
+  expanded formula:
+  "∀ #i x y.
+    (Send( x, y ) @ #i) ⇒ (∃ #j. (Receive( x, y ) @ #j) ∧ (#i < #j))"
+  */
+
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -265,7 +278,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-progress/mini9.spthy
 
   output:          examples/sapic/fast/feature-progress/mini9.spthy.tmp
-  processing time: 0.15s
+  processing time: 0.06s
   
   A_possible (exists-trace): verified (15 steps)
   B_possible (exists-trace): verified (7 steps)

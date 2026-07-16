@@ -1,27 +1,13 @@
-theory issue731 begin
+theory issue731
+
+begin
 
 // Function signature and definition of the equational theory E
 
 functions: fst/1, pair/2, snd/1
 equations: fst(<x.1, x.2>) = x.1, snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 lemma sanity:
   exists-trace
@@ -55,12 +41,6 @@ solve( State_111111( ) ▶₀ #a )
   qed
 qed
 
-
-
-
-
-
-
 rule (modulo E) Init[color=#ffffff, process="!", issapicrule,
                      role='Process']:
    [ ] --[ Init( ) ]-> [ State_( ) ]
@@ -85,9 +65,9 @@ rule (modulo E) p_0_1[color=#ffffff, process="|", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) Init_0_11[color=#ffffff, process="Init()", issapicrule,
+rule (modulo E) Init_0_11[color=#ffffff, process="Init();", issapicrule,
                           role='Process']:
-   [ State_11( ) ] --> [ State_111( ), State_112( ) ]
+   [ State_11( ) ] --> [ State_111( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -97,9 +77,9 @@ rule (modulo E) p_0_111[color=#408047, process="|", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) A_0_1111[color=#408047, process="A()", issapicrule,
+rule (modulo E) A_0_1111[color=#408047, process="A();", issapicrule,
                          role='Init']:
-   [ State_1111( ) ] --> [ State_11111( ), State_11112( ) ]
+   [ State_1111( ) ] --> [ State_11111( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -121,15 +101,9 @@ rule (modulo E) p_0_1111111[color=#804046, process="0", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) p_0_11112[color=#408047, process="0", issapicrule,
-                          role='Init']:
-   [ State_11112( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) B_0_1112[color=#408047, process="B()", issapicrule,
+rule (modulo E) B_0_1112[color=#408047, process="B();", issapicrule,
                          role='Init']:
-   [ State_1112( ) ] --> [ State_11121( ), State_11122( ) ]
+   [ State_1112( ) ] --> [ State_11121( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -145,21 +119,9 @@ rule (modulo E) p_0_111211[color=#628040, process="0", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) p_0_11122[color=#408047, process="0", issapicrule,
-                          role='Init']:
-   [ State_11122( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) p_0_112[color=#ffffff, process="0", issapicrule,
-                        role='Process']:
-   [ State_112( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) Resp_0_12[color=#ffffff, process="Resp()", issapicrule,
+rule (modulo E) Resp_0_12[color=#ffffff, process="Resp();", issapicrule,
                           role='Process']:
-   [ State_12( ) ] --> [ State_121( ), State_122( ) ]
+   [ State_12( ) ] --> [ State_121( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -169,9 +131,9 @@ rule (modulo E) p_0_121[color=#514080, process="|", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) C_0_1211[color=#514080, process="C()", issapicrule,
+rule (modulo E) C_0_1211[color=#514080, process="C();", issapicrule,
                          role='Resp']:
-   [ State_1211( ) ] --> [ State_12111( ), State_12112( ) ]
+   [ State_1211( ) ] --> [ State_12111( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -187,15 +149,9 @@ rule (modulo E) p_0_121111[color=#405780, process="0", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) p_0_12112[color=#514080, process="0", issapicrule,
-                          role='Resp']:
-   [ State_12112( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) D_0_1212[color=#514080, process="D()", issapicrule,
+rule (modulo E) D_0_1212[color=#514080, process="D();", issapicrule,
                          role='Resp']:
-   [ State_1212( ) ] --> [ State_12121( ), State_12122( ) ]
+   [ State_1212( ) ] --> [ State_12121( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -211,30 +167,23 @@ rule (modulo E) p_0_121211[color=#408048, process="0", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) p_0_12122[color=#514080, process="0", issapicrule,
-                          role='Resp']:
-   [ State_12122( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) p_0_122[color=#ffffff, process="0", issapicrule,
-                        role='Process']:
-   [ State_122( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -246,7 +195,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/regression-tests/issue731-clustering-by-role.spthy
 
   output:          examples/sapic/fast/regression-tests/issue731-clustering-by-role.spthy.tmp
-  processing time: 0.12s
+  processing time: 0.05s
   
   sanity (exists-trace): verified (7 steps)
 

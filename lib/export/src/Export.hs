@@ -152,7 +152,7 @@ prettyProVerifTheory m noReuse noRestrictions lemSel (thy, typEnv) = do
     lemmas = loadLemmas lemSel tc typEnv thy
     (macroproc, macroprochd) =
       -- if stateM is not empty, we have inlined the process calls, so we don't reoutput them
-      if hasBoundState then ([text ""], S.empty) else loadMacroProc tc thy
+      if hasBoundState then ([], S.empty) else loadMacroProc tc thy
     comments = [text "(*" $$ text bd $$ text "*)" | (_, bd) <- theoryFormalComments thy]
 
 stateHeaders :: S.Set ProVerifHeader
@@ -311,7 +311,7 @@ prettyProVerifEquivTheory (thy, typEnv) = do
     queries = loadQueries thy
     (macroproc, macroprochd) =
       -- if stateM is not empty, we have inlined the process calls, so we don't reoutput them
-      if hasBoundState then ([text ""], S.empty) else loadMacroProc tc thy
+      if hasBoundState then ([], S.empty) else loadMacroProc tc thy
     comments = [text "(*" $$ text bd $$ text "*)" | (_, bd) <- theoryFormalComments thy]
 
 ------------------------------------------------------------------------------
@@ -376,7 +376,7 @@ auxppTerm ppLit t = (ppTerm t, getHdTerm t)
   where
     ppTerm tm = case viewTerm tm of
       Lit v -> ppLit v
-      FApp (AC (ACfct (f, _))) _ -> translationFail $ "User defined AC function" ++ show f ++ "not supported "
+      FApp (AC (ACfct (f, _))) _ -> translationFail $ "User defined AC function " ++ show f ++ " not supported."
       FApp (AC Xor) ts -> ppXor ts
       FApp (AC o) ts -> ppTerms (ppACOp o) 1 "(" ")" ts
       FApp (NoEq s) [] | s == natOneSym -> text "1"
@@ -524,7 +524,7 @@ ppAction ProcessAnnotation {pureState = True, isStateChannel = Just _} tc (New v
     True
   )
 ppAction _ TranslationContext {trans} Rep | trans == ProVerif = (text "!", S.empty, False)
-ppAction _ TranslationContext {trans = DeepSec} Rep = (text "", S.empty, False)
+ppAction _ TranslationContext {trans = DeepSec} Rep = (emptyDoc, S.empty, False)
 ppAction _ tc@TranslationContext {trans = ProVerif} (ChIn t1 t2 mvars) =
   ( text "in(" <> pt1 <> text "," <> pt2 <> text ")",
     sh1 `S.union` sh2,
@@ -568,11 +568,11 @@ ppAction _ tc (ChOut t1 t2) = (text "out(" <> pt1 <> text "," <> pt2 <> text ")"
 ppAction _ tc@TranslationContext {trans} (Event (Fact tag m ts)) | trans == ProVerif = (text "event " <> pa, sh, True) -- event Headers are definde globally inside loadHeaders
   where
     (pa, sh) = ppFact tc (Fact tag m ts)
-ppAction _ TranslationContext {trans = DeepSec} (Event _) = (text "", S.empty, False)
+ppAction _ TranslationContext {trans = DeepSec} (Event _) = (emptyDoc, S.empty, False)
 -- For pure states, we do not put locks and unlocks
 ppAction ProcessAnnotation {pureState = True} TranslationContext {trans} (Lock _)
   | trans == ProVerif =
-      (text "", S.empty, False)
+      (emptyDoc, S.empty, False)
 -- If there is a state channel, we simply use it
 ppAction ProcessAnnotation {stateChannel = Just (AnVar lvar), pureState = False} TranslationContext {trans} (Lock _)
   | trans == ProVerif =
@@ -602,7 +602,7 @@ ppAction ProcessAnnotation {stateChannel = Nothing, pureState = False} tc@Transl
     ptvar = "lock_" ++ stripNonAlphanumerical (render pt)
 ppAction ProcessAnnotation {pureState = True} TranslationContext {trans} (Unlock _)
   | trans == ProVerif =
-      (text "", S.empty, False)
+      (emptyDoc, S.empty, False)
 ppAction ProcessAnnotation {stateChannel = Just (AnVar lvar), pureState = False} TranslationContext {trans} (Unlock _)
   | trans == ProVerif =
       ( text "out(lock_" <> ppLVar lvar <> text "," <> text "counterlock" <> ppLVar lvar <> text "+1" <> text ") | ",
@@ -701,16 +701,16 @@ ppSapic tc (ProcessComb (Let t1 t2 mvars) _ pl pr) =
     (pt2, sh2) = ppSapicTerm tc t2
 
 -- if the process call does not have any argument, we just inline
-ppSapic tc (ProcessComb (ProcessCall _ []) _ pl _) = (ppl, pshl)
+ppSapic tc (ProcessAction (ProcessCall _ []) _ pl) = (ppl, pshl)
   where
     (ppl, pshl) = ppSapic tc pl
 
 -- if there are state or lock channels created by addStateChannels, we must inline
-ppSapic tc@TranslationContext {hasBoundStates = True} (ProcessComb (ProcessCall {}) _ pl _) =
+ppSapic tc@TranslationContext {hasBoundStates = True} (ProcessAction (ProcessCall {}) _ pl) =
   (ppl, pshl)
   where
     (ppl, pshl) = ppSapic tc pl
-ppSapic tc (ProcessComb (ProcessCall name ts) _ _ _) =
+ppSapic tc (ProcessAction (ProcessCall name ts) _ _) =
   ( text name <> parens (fsep (punctuate comma ppts)),
     S.unions shs
   )
@@ -903,7 +903,7 @@ addAttackerReportProc tc thy p =
 
 loadProc :: TranslationContext -> OpenTheory -> (Doc, S.Set ProVerifHeader, Bool, Bool)
 loadProc tc thy = case theoryProcesses thy of
-  [] -> (text "", S.empty, False, False)
+  [] -> (emptyDoc, S.empty, False, False)
   [pr] ->
     let (d, headers) = ppSapic tc2 p
         finald =
@@ -921,7 +921,7 @@ loadMacroProc :: TranslationContext -> OpenTheory -> ([Doc], S.Set ProVerifHeade
 loadMacroProc tc thy = loadMacroProcs tc thy (theoryProcessDefs thy)
 
 loadMacroProcs :: TranslationContext -> OpenTheory -> [ProcessDef] -> ([Doc], S.Set ProVerifHeader)
-loadMacroProcs _ _ [] = ([text ""], S.empty)
+loadMacroProcs _ _ [] = ([], S.empty)
 loadMacroProcs tc thy (p : q) =
   let (docs, heads) = loadMacroProcs tc3 thy q
    in case p._pVars of
@@ -1357,12 +1357,12 @@ headersOfType types =
       types
 
 headerOfFunSym :: SapicFunSym -> S.Set ProVerifHeader
-headerOfFunSym ((NoEqUser (f, (k, pub, Constructor))), inTypes, outType) =
+headerOfFunSym ((NoEqUser (f, (k, pub, Constructor, _))), inTypes, outType) =
   Fun "fun" (ppFunSym f) k ("(" ++ makeArgtypes inTypes ++ "):" ++ ppType outType) (priv_or_pub pub) `S.insert` headersOfType (outType : inTypes)
   where
     priv_or_pub Public = []
     priv_or_pub Private = ["private"]
-headerOfFunSym ((ACfctUser f), _, _) = translationFail $ "User defined AC function" ++ show f ++ "not supported "-- "AC function not supported"
+headerOfFunSym ((ACfctUser f), _, _) = translationFail $ "User defined AC function " ++ show f ++ "not supported."-- "AC function not supported"
 headerOfFunSym _ = S.empty
 
 -- | Load headers from an OpenTheory into a set of ProVerif Headers
@@ -1413,10 +1413,10 @@ headersOfRule tc typeEnv r | (lhs `RRule` rhs) <- ctxtStRuleToRRule r = do
   let (plhs, lsh) = ppLNTerm tc lhs
       (prhs, rsh) = ppLNTerm tc rhs
       prefix = case viewTerm lhs of
-        FApp (NoEq (_, (_, _, Destructor))) _ -> "reduc"
+        FApp (NoEq (_, (_, _, Destructor, _))) _ -> "reduc"
         _ -> "equation"
       suffix = case viewTerm lhs of
-        FApp (NoEq (_, (_, Private, Destructor))) _ -> " [private]"
+        FApp (NoEq (_, (_, Private, Destructor, _))) _ -> " [private]"
         _ -> ""
       freesr = frees lhs `union` frees rhs
       freesrTyped = map (\v -> (v, M.lookup v tye.vars)) freesr
@@ -1451,18 +1451,18 @@ prettyProVerifHeader = \case
   Eq eqtype quant eq pub -> text eqtype <> text " " <> text quant <> text " " <> text eq <> text pub <> text "."
   Sym symkind name symtype [] -> text symkind <> text " " <> text name <> text symtype <> text "."
   Sym symkind name symtype attr -> text symkind <> text " " <> text name <> text symtype <> text "[" <> fsep (punctuate comma (map text attr)) <> text "]" <> text "."
-  Fun "" _ _ _ _ -> text ""
+  Fun "" _ _ _ _ -> emptyDoc
   Fun fkind name _ symtype [] -> text fkind <> text " " <> text name <> text symtype <> text "."
   Fun fkind name _ symtype attr ->
     text fkind <> text " " <> text name <> text symtype <> text "[" <> fsep (punctuate comma (map text attr)) <> text "]" <> text "."
 
 prettyDeepSecHeader :: ProVerifHeader -> Doc
 prettyDeepSecHeader = \case
-  Type _ -> text "" -- no types in deepsec
+  Type _ -> emptyDoc -- no types in deepsec
   Eq "reduc" _ eq _ -> text "reduc" <> text " " <> text eq <> text "."
   Eq eqtype _ eq _ -> error $ "Deepsec does not support equations ATM: " ++ eqtype ++ " " ++ eq
-  HEvent _ _ -> text ""
-  Table _ _ -> text ""
+  HEvent _ _ -> emptyDoc
+  Table _ _ -> emptyDoc
   -- drop symtypes in symbol declarations
   Sym symkind name _ [] -> text symkind <> text " " <> text name <> text "."
   Sym symkind name _ attr ->
@@ -1470,7 +1470,7 @@ prettyDeepSecHeader = \case
       then text symkind <> text " " <> text name <> text "[private]" <> text "."
       else text symkind <> text " " <> text name <> text "."
   -- only keep arity for fun declarations
-  Fun "" _ _ _ _ -> text ""
+  Fun "" _ _ _ _ -> emptyDoc
   Fun fkind name arity _ [] ->
     text fkind
       <> text " "

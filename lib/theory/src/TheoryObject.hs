@@ -229,7 +229,7 @@ foldTheoryItem ::
   (FormalComment -> a) ->
   (ConfigBlock -> a) ->
   (Predicate -> a) ->
-  ([Macro] -> a) ->
+  ([LNMacro] -> a) ->
   (s -> a) ->
   TheoryItem r p s ->
   a
@@ -250,7 +250,7 @@ foldDiffTheoryItem ::
   (DiffLemma p -> a) ->
   ((Side, Lemma p2) -> a) ->
   ((Side, Restriction) -> a) ->
-  ([Macro] -> a) ->
+  ([LNMacro] -> a) ->
   (FormalComment -> a) ->
   (ConfigBlock -> a) ->
   DiffTheoryItem r r2 p p2 ->
@@ -326,7 +326,7 @@ rightTheoryRules =
   foldDiffTheoryItem (const []) (\(x, y) -> if (x == RHS) then [y] else []) (const []) (const []) (const []) (const []) (const []) (const []) <=< L.get diffThyItems
 
 -- |  All macros of a theory.
-theoryMacros :: Theory sig c r p s -> [Macro]
+theoryMacros :: Theory sig c r p s -> [LNMacro]
 theoryMacros =
   foldTheoryItem (const []) (const []) (const []) (const []) (const []) (const []) (\m -> m) (const []) <=< L.get thyItems
 
@@ -394,7 +394,7 @@ diffTheoryRestrictions =
   foldDiffTheoryItem (const []) (const []) (const []) (const []) return (const []) (const []) (const []) <=< L.get diffThyItems
 
 -- |  All macros of a diff theory.
-diffTheoryMacros :: DiffTheory sig c r r2 p p2 -> [Macro]
+diffTheoryMacros :: DiffTheory sig c r r2 p p2 -> [LNMacro]
 diffTheoryMacros =
   foldDiffTheoryItem (const []) (const []) (const []) (const []) (const []) (\m -> m) (const []) (const []) <=< L.get diffThyItems
 
@@ -435,13 +435,19 @@ expandRestriction ::
   Theory sig c r p s ->
   ProtoRestriction SyntacticLNFormula ->
   Either FactTag (ProtoRestriction LNFormula)
-expandRestriction thy (Restriction n f) = Restriction n <$> expandFormula (theoryPredicates thy) f
+expandRestriction thy (Restriction n f ofm) = do
+  f' <- expandFormula (theoryPredicates thy) f
+  ofm' <- mapM (expandFormula (theoryPredicates thy)) ofm
+  return $ Restriction n f' ofm'
 
 expandLemma ::
   Theory sig c r p1 s ->
   ProtoLemma SyntacticLNFormula p2 ->
   Either FactTag (ProtoLemma LNFormula p2)
-expandLemma thy (Lemma n u m tq f a p) = (\f' -> Lemma n u m tq f' a p) <$> expandFormula (theoryPredicates thy) f
+expandLemma thy (Lemma n u m tq f ofm a p) = do
+  f' <- expandFormula (theoryPredicates thy) f
+  ofm' <- mapM (expandFormula (theoryPredicates thy)) ofm
+  return $ Lemma n u m tq f' ofm' a p
 
 -- | Add a new restriction. Fails, if restriction with the same name exists.
 addRestriction :: Restriction -> Theory sig c r p s -> Maybe (Theory sig c r p s)
@@ -487,11 +493,11 @@ addFunctionTypingInfo :: SapicFunSym -> Theory sig c r p TranslationElement -> T
 addFunctionTypingInfo l = modify thyItems (++ [TranslationItem $ FunctionTypingInfo l])
 
 -- | Add new Macros.
-addMacros :: [Macro] -> Theory sig c r p s -> Maybe (Theory sig c r p s)
+addMacros :: [LNMacro] -> Theory sig c r p s -> Maybe (Theory sig c r p s)
 addMacros m thy = return $ modify thyItems (++ [MacroItem m]) thy
 
 -- | Add new Macros.
-addDiffMacros :: [Macro] -> DiffTheory sig c r r2 p p2 -> Maybe (DiffTheory sig c r r2 p p2)
+addDiffMacros :: [LNMacro] -> DiffTheory sig c r r2 p p2 -> Maybe (DiffTheory sig c r r2 p p2)
 addDiffMacros m thy = return $ modify diffThyItems (++ [DiffMacroItem m]) thy
 
 -- | Remove all Function Typing information in Theory
@@ -688,7 +694,7 @@ lookupProcessDef :: String -> Theory sig c r p TranslationElement -> Maybe (Proc
 lookupProcessDef name = find ((name ==) . L.get pName) . theoryProcessDefs
 
 -- | Find the function typing info for a given function symbol.
-lookupFunctionTypingInfo :: UserDefineSym -> Theory sig c r p TranslationElement -> Maybe SapicFunSym
+lookupFunctionTypingInfo :: UserDefinedSym -> Theory sig c r p TranslationElement -> Maybe SapicFunSym
 lookupFunctionTypingInfo tag = find (\(fs,_,_) -> tag == fs) . theoryFunctionTypingInfos
 
 -- | Find the export info for the given tag.
@@ -749,16 +755,20 @@ prettyTheory ::
   d
 prettyTheory ppSig ppCache ppRule ppPrf ppSap thy =
   vsep $
-    [ kwTheoryHeader $ text $ L.get thyName thy,
+    [ kwTheoryName $ text $ L.get thyName thy]
+    ++ parMap rdeepseq ppItem (filter isConfigBlock (L.get thyItems thy))
+    ++ [kwTheoryBegin,
       lineComment_ "Function signature and definition of the equational theory E",
       ppSig $ L.get thySignature thy,
-      if thyT == [] then text "" else vcat $ map prettyTactic thyT,
-      if null thyH then text "" else text "heuristic: " <> text (prettyGoalRankings thyH),
+      if null thyT then emptyDoc else vcat $ map prettyTactic thyT,
+      if null thyH then emptyDoc else text "heuristic: " <> text (prettyGoalRankings thyH),
       ppCache $ L.get thyCache thy
     ]
-      ++ parMap rdeepseq ppItem (L.get thyItems thy)
+      ++ parMap rdeepseq ppItem (filter (not . isConfigBlock) (L.get thyItems thy))
       ++ [kwEnd]
   where
+    isConfigBlock (ConfigBlockItem _) = True
+    isConfigBlock _ = False
     ppItem =
       foldTheoryItem
         ppRule
@@ -787,29 +797,45 @@ prettyTranslationElement (ProcessDefItem p) =
         )
     <-> (text "=")
     <-> nest 2 (prettyProcess $ L.get pBody p)
-prettyTranslationElement (FunctionTypingInfo (ACfctUser (fsn,(priv,_)), intypes, outtype)) =
+prettyTranslationElement (FunctionTypingInfo (ACfctUser (fsn,(priv,constr,ndc)), intypes, outtype)) =
   (text "function:")
     <-> text (unpack fsn)
     <-> parens (fsep $ punctuate comma $ map printType intypes)
     <-> text ":"
     <-> printType outtype
-    <-> text "  [AC]"
+    <-> text " [AC]"
     <-> text (showPriv priv)
+    <-> text (showConst constr)
+    <-> text (showNDC ndc)
   where
     printType = maybe (text defaultSapicTypeS) text
     showPriv Private = " [private]"
     showPriv Public = ""
-prettyTranslationElement (FunctionTypingInfo (NoEqUser (fsn, (_, priv, _)), intypes, outtype)) =
+    showConst Constructor = ""
+    showConst Destructor = " [destructor]"
+    showNDC NotNDC = ""
+    showNDC IsNDC = " [NDC]"
+    showNDC IsNDCDiff = " [NDC-Diff]"
+    showNDC IsNDCBoth = " [NDC,NDC-Diff]"
+prettyTranslationElement (FunctionTypingInfo (NoEqUser (fsn, (_, priv, constr, ndc)), intypes, outtype)) =
   (text "function:")
     <-> text (unpack fsn)
     <-> parens (fsep $ punctuate comma $ map printType intypes)
     <-> text ":"
     <-> printType outtype
     <-> text (showPriv priv)
+    <-> text (showConst constr)
+    <-> text (showNDC ndc)
   where
     printType = maybe (text defaultSapicTypeS) text
     showPriv Private = " [private]"
     showPriv Public = ""
+    showConst Constructor = ""
+    showConst Destructor = " [destructor]"
+    showNDC NotNDC = ""
+    showNDC IsNDC = " [NDC]"
+    showNDC IsNDCDiff = " [NDC-Diff]"
+    showNDC IsNDCBoth = " [NDC,NDC-Diff]"
 prettyTranslationElement (ExportInfoItem eInfo) =
   (text "export: ")
     <-> text (L.get eTag eInfo)
@@ -833,11 +859,16 @@ prettyVarList :: (Document d) => [LVar] -> d
 prettyVarList = fsep . punctuate comma . map prettyLVar
 
 -- |  Pretty print all macros
-prettyMacros :: (HighlightDocument d) => [Macro] -> d
-prettyMacros m = if m == [] then text empty else vcat (keyword_ "macros:" : map prettyMacro m)
+prettyMacros :: (HighlightDocument d) => [LNMacro] -> d
+prettyMacros [] = emptyDoc
+prettyMacros m = keyword_ "macros:" $$ nest 4
+  (vcat [if i == length m - 1
+          then prettyMacro macro
+          else prettyMacro macro <> comma
+        | (i, macro) <- zip [0..] m])
 
 -- |  Pretty print a macro.
-prettyMacro :: (HighlightDocument d) => Macro -> d
+prettyMacro :: (HighlightDocument d) => LNMacro -> d
 prettyMacro (op, args, out) =
   vcat
     [ ppNonEmptyList
@@ -845,7 +876,8 @@ prettyMacro (op, args, out) =
         text
         ([BC.unpack op ++ "("])
         <-> prettyVarList args
-        <-> text (") = " ++ show (out))
+        <-> text (") = ")
+        <-> prettyTerm (text . show) out
     ]
   where
     ppNonEmptyList _ _ [] = emptyDoc
@@ -858,20 +890,32 @@ prettyRestriction :: (HighlightDocument d) => Restriction -> d
 prettyRestriction rstr =
   kwRestriction <-> text (L.get rstrName rstr)
     <> colon
-      $-$ (nest 2 $ doubleQuotes $ prettyLNFormula $ L.get rstrFormula rstr)
+      $-$ (nest 2 $ doubleQuotes $ prettyLNFormula (fromMaybe expandedFormula ogFormula))
       $-$ (nest 2 $ if safety then lineComment_ "safety formula" else emptyDoc)
+      $--$ (case ogFormula of
+            Just _ -> nest 2 $ multiComment $ text "expanded formula:" $-$ 
+                             doubleQuotes (prettyLNFormula expandedFormula)
+            _ -> emptyDoc)
   where
-    safety = isSafetyFormula $ formulaToGuarded_ $ L.get rstrFormula rstr
+    Restriction _ expandedFormula ogFormula = rstr
+    safety = isSafetyFormula $ formulaToGuarded_ $ expandedFormula
 
 -- | Pretty print an either restriction.
 prettyEitherRestriction :: (HighlightDocument d) => (Side, Restriction) -> d
 prettyEitherRestriction (s, rstr) =
   kwRestriction <-> text (L.get rstrName rstr) <-> prettySide s
     <> colon
-      $-$ (nest 2 $ doubleQuotes $ prettyLNFormula $ L.get rstrFormula rstr)
+      $-$ (nest 2 $ doubleQuotes $ prettyLNFormula (fromMaybe expandedFormula ogFormula))
       $-$ (nest 2 $ if safety then lineComment_ "safety formula" else emptyDoc)
+      $--$ case ogFormula of
+            Just _ -> nest 2 $ multiComment $ text "expanded formula:" $-$ 
+                             doubleQuotes (prettyLNFormula expandedFormula)
+            _ -> emptyDoc
   where
-    safety = isSafetyFormula $ formulaToGuarded_ $ L.get rstrFormula rstr
+    Restriction _ expandedFormula ogFormula = rstr
+    safety = isSafetyFormula $ formulaToGuarded_ $ expandedFormula
+
+
 
 -- | Pretty print a configuration block.
 prettyConfigBlock :: (HighlightDocument d) => ConfigBlock -> d
@@ -889,8 +933,7 @@ prettyTactic tactic =
     <> (char $ goalRankingToChar $ _presort tactic)
       $-$ sep
         [ ppTabTab "prio" (map stringRankingPrio $ _prios tactic) (map stringsPrio $ _prios tactic),
-          ppTabTab "deprio" (map stringRankingDeprio $ _deprios tactic) (map stringsDeprio $ _deprios tactic),
-          char '\n'
+          ppTabTab "deprio" (map stringRankingDeprio $ _deprios tactic) (map stringsDeprio $ _deprios tactic)
         ]
   where
     -- pretty print for a prio block

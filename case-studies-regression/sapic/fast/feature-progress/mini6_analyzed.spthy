@@ -1,4 +1,6 @@
-theory mini6 begin
+theory mini6
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -8,19 +10,9 @@ equations:
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
-
-
 heuristic: p
 
 section{* small example for progression function *}
-
-
-
-
-
-
-
-
 
 lemma A_possible:
   exists-trace "∃ #t. A( ) @ #t"
@@ -64,22 +56,6 @@ guarded formula characterizing all counter-examples:
 */
 simplify
 by solve( State_112( ~prog_, ~prog_11, a ) ▶₀ #t )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 rule (modulo E) MessageIDRule[color=#ffffff, process="new a.1;",
                               issapicrule, role='Process']:
@@ -203,17 +179,38 @@ restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
+
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
 
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 restriction Progress__to_1:
   "∀ prog_ #t.
     (ProgressFrom_( prog_ ) @ #t) ⇒ (∃ #t.1. ProgressTo_1( prog_ ) @ #t.1)"
+
+  /*
+  expanded formula:
+  "∀ prog_ #t.
+    (ProgressFrom_( prog_ ) @ #t) ⇒ (∃ #t.1. ProgressTo_1( prog_ ) @ #t.1)"
+  */
 
 restriction Progress_11_to_111_or_1121:
   "∀ prog_11 #t.
@@ -221,22 +218,42 @@ restriction Progress_11_to_111_or_1121:
     ((∃ #t.1. ProgressTo_111( prog_11 ) @ #t.1) ∨
      (∃ #t.1. ProgressTo_1121( prog_11 ) @ #t.1))"
 
+  /*
+  expanded formula:
+  "∀ prog_11 #t.
+    (ProgressFrom_11( prog_11 ) @ #t) ⇒
+    ((∃ #t.1. ProgressTo_111( prog_11 ) @ #t.1) ∨
+     (∃ #t.1. ProgressTo_1121( prog_11 ) @ #t.1))"
+  */
+
 restriction Progress_1111_to_11111:
   "∀ prog_1111 #t.
     (ProgressFrom_1111( prog_1111 ) @ #t) ⇒
     (∃ #t.1. ProgressTo_11111( prog_1111 ) @ #t.1)"
 
+  /*
+  expanded formula:
+  "∀ prog_1111 #t.
+    (ProgressFrom_1111( prog_1111 ) @ #t) ⇒
+    (∃ #t.1. ProgressTo_11111( prog_1111 ) @ #t.1)"
+  */
+
 restriction progressInit:
   "∃ #t. Init( ) @ #t"
+
+  /*
+  expanded formula:
+  "∃ #t. Init( ) @ #t"
+  */
 
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -248,7 +265,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-progress/mini6.spthy
 
   output:          examples/sapic/fast/feature-progress/mini6.spthy.tmp
-  processing time: 0.20s
+  processing time: 0.05s
   
   A_possible (exists-trace): verified (10 steps)
   B_impossible (all-traces): verified (2 steps)

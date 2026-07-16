@@ -1,9 +1,11 @@
-theory AKE begin
+theory AKE
+
+begin
 
 // Function signature and definition of the equational theory E
 
-functions: adec/2, aenc/2, check_rep/2[destructor], first/1, fst/1,
-           get_rep/1[destructor], pair/2, pk/1, rep/2[private,constructor],
+functions: adec/2, aenc/2, check_rep/2 [destructor], first/1, fst/1,
+           get_rep/1 [destructor], pair/2, pk/1, rep/2 [private,constructor],
            report/1, snd/1
 equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
@@ -13,21 +15,9 @@ equations:
     get_rep(rep(x.1, x.2)) = x.1,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
 
-
-
-
-
 predicate: Report( x, y )<=>¬(first(y) = 'loc')
-
-
-
-
-
-
 
 lemma can_run_p:
   exists-trace "∃ #t h1 h2. Poutput( h1, h2 ) @ #t"
@@ -171,31 +161,14 @@ solve( State_2111111111( cypher, skV, signed ) ▶₀ #t1 )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 restriction Restr_ReportRule_1:
   "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'loc'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'loc'))"
+  */
 
 rule (modulo E) ReportRule[color=#ffffff, process="|", issapicrule,
                            role='Process']:
@@ -239,9 +212,9 @@ rule (modulo E) p_1_1[color=#ffffff, process="!", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) r_0_11[color=#ffffff, process="r()", issapicrule,
+rule (modulo E) r_0_11[color=#ffffff, process="r();", issapicrule,
                        role='Process']:
-   [ State_11( ) ] --> [ State_111( ), State_112( ) ]
+   [ State_11( ) ] --> [ State_111( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -345,12 +318,6 @@ rule (modulo E) p_0_111111111[color=#405280, process="0", issapicrule,
      [ State_111111111( k, pkV ) ] --> [ ]
   */
 
-rule (modulo E) p_0_112[color=#ffffff, process="0", issapicrule,
-                        role='Process']:
-   [ State_112( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
 rule (modulo E) p_0_2[color=#ffffff, process="!", issapicrule,
                       role='Process']:
    [ State_2( ) ] --> [ !Semistate_21( ) ]
@@ -363,9 +330,9 @@ rule (modulo E) p_1_2[color=#ffffff, process="!", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) v_0_21[color=#ffffff, process="v()", issapicrule,
+rule (modulo E) v_0_21[color=#ffffff, process="v();", issapicrule,
                        role='Process']:
-   [ State_21( ) ] --> [ State_211( ), State_212( ) ]
+   [ State_21( ) ] --> [ State_211( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -559,32 +526,41 @@ rule (modulo E) p_0_211111112[color=#658040, process="0", issapicrule,
      [ State_211111112( cypher, skV, signed ) ] --> [ ]
   */
 
-rule (modulo E) p_0_212[color=#ffffff, process="0", issapicrule,
-                        role='Process']:
-   [ State_212( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -596,7 +572,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-locations/AKE.spthy
 
   output:          examples/sapic/fast/feature-locations/AKE.spthy.tmp
-  processing time: 0.45s
+  processing time: 0.15s
   
   can_run_p (exists-trace): verified (3 steps)
   can_run_v (exists-trace): falsified - no trace found (9 steps)

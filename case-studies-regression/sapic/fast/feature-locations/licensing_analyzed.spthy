@@ -1,10 +1,13 @@
-theory licensing begin
+theory licensing
+
+begin
 
 // Function signature and definition of the equational theory E
 
-functions: adec/2, aenc/2, ask/2, check_rep/2[destructor], dec/1, dec1/1,
-           dec2/1, fst/1, get_rep/1[destructor], ok/2, pair/2, pk/1, prg/1,
-           rep/2[private,constructor], report/1, run/2, sdec/2, senc/2, snd/1, tkn/1
+functions: adec/2, aenc/2, ask/2, check_rep/2 [destructor], dec/1,
+           dec1/1, dec2/1, fst/1, get_rep/1 [destructor], ok/2, pair/2, pk/1, prg/1,
+           rep/2 [private,constructor], report/1, run/2, sdec/2, senc/2, snd/1,
+           tkn/1
 equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
     check_rep(rep(x.1, x.2), x.2) = x.1,
@@ -13,23 +16,9 @@ equations:
     sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: s
 
-
-
-
-
-
-
 predicate: Report( x, y )<=>¬(fst(y) = 'loc')
-
-
-
-
-
-
 
 lemma attested_comput:
   all-traces
@@ -128,49 +117,14 @@ solve( State_1( prog ) ▶₀ #t2 )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 restriction Restr_ReportRule_1:
   "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'loc'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'loc'))"
+  */
 
 rule (modulo E) ReportRule[color=#ffffff, process="new prog.1;",
                            issapicrule, role='Process']:
@@ -246,16 +200,14 @@ rule (modulo E) p_1_111[color=#ffffff, process="!", issapicrule,
      [ !Semistate_1111( prog ) ] --> [ State_1111( prog ) ]
   */
 
-rule (modulo E) p_0_1111[color=#ffffff, process="p()", issapicrule,
+rule (modulo E) p_0_1111[color=#ffffff, process="p();", issapicrule,
                          role='Process']:
-   [ State_1111( prog.1 ) ]
-  -->
-   [ State_11111( prog.1 ), State_11112( prog.1 ) ]
+   [ State_1111( prog.1 ) ] --> [ State_11111( prog.1 ) ]
 
   /*
-  rule (modulo AC) p_0_1111[color=#ffffff, process="p()", issapicrule,
+  rule (modulo AC) p_0_1111[color=#ffffff, process="p();", issapicrule,
                             role='Process']:
-     [ State_1111( prog ) ] --> [ State_11111( prog ), State_11112( prog ) ]
+     [ State_1111( prog ) ] --> [ State_11111( prog ) ]
   */
 
 rule (modulo E) inpkskV_0_11111[color=#804046, process="in(pk(skV.1));",
@@ -579,16 +531,6 @@ rule (modulo E) p_0_111111111111111111[color=#804046, process="0",
      [ ]
   */
 
-rule (modulo E) p_0_11112[color=#ffffff, process="0", issapicrule,
-                          role='Process']:
-   [ State_11112( prog.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_11112[color=#ffffff, process="0", issapicrule,
-                             role='Process']:
-     [ State_11112( prog ) ] --> [ ]
-  */
-
 rule (modulo E) p_0_112[color=#ffffff, process="!", issapicrule,
                         role='Process']:
    [ State_112( prog.1 ) ] --> [ !Semistate_1121( prog.1 ) ]
@@ -610,15 +552,13 @@ rule (modulo E) p_1_112[color=#ffffff, process="!", issapicrule,
   */
 
 rule (modulo E) vendorprog_0_1121[color=#ffffff,
-                                  process="vendor(prog.1)", issapicrule, role='Process']:
-   [ State_1121( prog.1 ) ]
-  -->
-   [ State_11211( prog.1 ), State_11212( prog.1 ) ]
+                                  process="vendor(prog.1);", issapicrule, role='Process']:
+   [ State_1121( prog.1 ) ] --> [ State_11211( prog.1 ) ]
 
   /*
   rule (modulo AC) vendorprog_0_1121[color=#ffffff,
-                                     process="vendor(prog.1)", issapicrule, role='Process']:
-     [ State_1121( prog ) ] --> [ State_11211( prog ), State_11212( prog ) ]
+                                     process="vendor(prog.1);", issapicrule, role='Process']:
+     [ State_1121( prog ) ] --> [ State_11211( prog ) ]
   */
 
 rule (modulo E) newskV_0_11211[color=#406880, process="new skV.2;",
@@ -1042,55 +982,41 @@ rule (modulo E) p_0_1121111112[color=#406880, process="0", issapicrule,
      [ State_1121111112( prog, signed, shared_key, skV ) ] --> [ ]
   */
 
-rule (modulo E) p_0_11212[color=#ffffff, process="0", issapicrule,
-                          role='Process']:
-   [ State_11212( prog.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_11212[color=#ffffff, process="0", issapicrule,
-                             role='Process']:
-     [ State_11212( prog ) ] --> [ ]
-  */
-
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
-Message Derivation Checks
-=========================
-
-  The variables of the following rule(s) are not derivable from their premises, you may be performing unintended pattern matching.
-
-Rule inpkskV_0_11111: 
-Failed to derive Variable(s): skV.1
-
-Rule insencprgprogsharedkey_0_111111111: 
-Failed to derive Variable(s): prog2.1
-
-Rule insenctkntokensharedkey_0_111111111111: 
-Failed to derive Variable(s): token.1
-
-Rule insencaskxtkntokensharedkey_0_1121111111111111: 
-Failed to derive Variable(s): token2.1, x.2
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -1102,10 +1028,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-locations/licensing.spthy
 
   output:          examples/sapic/fast/feature-locations/licensing.spthy.tmp
-  processing time: 2.29s
-  
-  WARNING: 1 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 0.49s
   
   attested_comput (all-traces): verified (6 steps)
   unique (all-traces): verified (7 steps)

@@ -7,17 +7,14 @@ module CloseRule (
     closeTheoryWithMaude,
     proveTheory,
     mkSystem,
-    closeIntrRule,
-    applyChainReduction,
-    prettyChainReduction
+    applyNDCcheck,
+    prettyNDCcheck
 )where
-
-import Items.RuleItem
 
 import           Prelude                             hiding (id, (.))
 
-import           Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as BC
+import           Data.Function (on)
 import           Data.List
 import           Data.Maybe
 import qualified Data.Set                            as S
@@ -34,28 +31,25 @@ import           Control.Parallel.Strategies
 import qualified Extension.Data.Label                as L
 import           Extension.Data.Label                hiding (get)
 
+import           Items.RuleItem
+
 import           ClosedTheory
 import           TheoryObject
 import           OpenTheory
 import           Theory.Model
 import           Theory.Proof
 import           Theory.Tools.InjectiveFactInstances
--- import           Theory.Tools.IntruderRules
-
-import           Term.Positions
-
+import           Theory.Tools.IntruderRules
 import           Theory.Constraint.Solver.Sources (IntegerParameters)
 import           Theory.Constraint.Solver.Sources     as Sources (IntegerParameters(..))
-
-
 import           Theory.Tools.LoopBreakers
 
+import           Utils.Misc
 
-import Debug.Trace
-import Text.PrettyPrint.Class
-import GHC.IO (unsafePerformIO)
+import           Text.PrettyPrint.Class
 
-import Text.Read
+import           Debug.Trace
+import           GHC.IO (unsafePerformIO)
 
 -- | Close a theory given a maude signature. This signature must be valid for
 -- the given theory.
@@ -87,8 +81,8 @@ closeTheoryWithMaude sig thy0 autoSources showSaturation =
        ((closeTheoryItem <$> L.get thyItems thy0) `using` parList rdeepseq)
     closeTheoryItem = foldTheoryItem
        (RuleItem . closeProtoRule hnd (theoryMacros thy0))
-       RestrictionItem
-       (LemmaItem . fmap skeletonToIncrementalProof)
+       (RestrictionItem . applyMacroInRestriction (theoryMacros thy0))
+       (LemmaItem . fmap skeletonToIncrementalProof . applyMacroInLemma (theoryMacros thy0))
        TextItem
        ConfigBlockItem
        PredicateItem
@@ -189,13 +183,13 @@ mkSystem ctxt restrictions previousItems =
         guard $    lemmaSourceKind lem <= kind
                 && ReuseLemma `elem` L.get lAttributes lem
                 && AllTraces == L.get lTraceQuantifier lem
-                && (L.get lName lem) `notElem` (L.get pcHiddenLemmas ctxt)
-                && "ALL" `notElem` (L.get pcHiddenLemmas ctxt)
+                && L.get lName lem `notElem` L.get pcHiddenLemmas ctxt
+                && "ALL" `notElem` L.get pcHiddenLemmas ctxt
         return $ formulaToGuarded_ $ L.get lFormula lem
 
-
+-- | Apply the given substitutions to the two given intruder rules and return all resulting rules. This is used for applying chain reduction rules.
 appSubst :: MonadFresh m => [LNSubstVFresh] -> IntrRuleAC -> IntrRuleAC -> m [(IntrRuleAC,IntrRuleAC)]
-appSubst [] _ _    = return []
+appSubst [] _ _             = return []
 appSubst (x:xs) inst0 inst1 = do
   sub <- freshToFree x
   let (instt0,instt1) = apply sub (inst0,inst1)
@@ -206,50 +200,59 @@ appSubst (x:xs) inst0 inst1 = do
 landFormula :: [LNFact] -> ProtoFormula Unit2 (String,LSort) Name  LVar
 landFormula facts = foldl (\ fm (idx, fact) -> fm .&&. Ato (Action (LIT (Var (Free (LVar (show (idx :: Integer)) LSortNode 0))) ) fact ))  ltrue (zip [0..]  (map (fmap (fmap (fmap Free))) facts))
 
+-- | Naive deduction check: checks whether a fact is directly present in the given set of terms or can be derived from them by applying construction rules only.
+--   This is used as a quick check before performing the more expensive deduction check.
 dedNaive :: LNTerm -> [LNTerm] -> Bool
-dedNaive fact termsT = aux1 fact
-
+dedNaive fact terms = ded fact
   where
-    aux1 f | f `elem` termsT    = True
-    aux1 (FAPP (NoEq (_,(_,Private,_))) _) = False
-    aux1 (FAPP (AC (ACfct (_,(Private,_)))) _) = False
-    aux1 (FAPP _ p) = foldr (\x1 -> (&& aux1 x1)) True p
-    aux1 _                     = False
+    ded f | f `elem` terms                      = True
+    ded (FAPP (NoEq (_,(_,Private,_, _))) _)    = False
+    ded (FAPP (AC (ACfct (_,(Private,_,_)))) _) = False
+    ded (FAPP _ p)                              = foldr (\x1 -> (&& ded x1)) True p
+    ded _                                       = False
 
-derivationTest :: SignatureWithMaude -> OpenRuleCache -> LNFact -> [LNFact] -> Bool
-derivationTest sig intrR fact terms = setD == [] || checkProofd tabProof1 || checkProofd tabProof2 -- trace ("\ntabProof : " ++ show tabProof) 
+-- | Checks whether given a Maude signature and intruder rules a certain fact can be derived from a given set of terms.
+deductionCheck :: Integer -> Integer -> SignatureWithMaude -> OpenRuleCache -> LNFact -> [LNFact] -> Bool
+deductionCheck ocLimit satLimit sig intrR fact terms =
+    -- (if null setD then id else trace ndcTheoryTrace)
+    (null setD || checkProofd tabProof1 || checkProofd tabProof2)
   where
+    -- Dump the synthetic Tamarin theory/theories used for this NDC deduction
+    -- check to the command line. We print the open (.spthy-renderable) theories,
+    -- which show the generated Out0 source rule and the (not-yet-NDC-tagged)
+    -- destructor rules.
+    ndcTheoryTrace =
+         "\n===== [NDC check] synthetic theory used for the deduction check =====\n"
+      ++ "----- with restrictions OnlyOnce and OnlyOnceD -----\n"
+      ++ tabTheory modifiedTheory1
+      ++ "\n----- with restriction OnlyOnce only -----\n"
+ --     ++ tabTheory modifiedTheory2
+      ++ "\n===== [NDC check] end of synthetic theory =====\n"
+
     tInf (Fact _ _ [f]) = f
     tInListf = foldMap getFactTerms
     setD = filter (not . (dedNaive (tInf fact) . tInListf)) (decompose terms)
 
-    decompose ((Fact KUFact annot [FAPP (NoEq (b,(n,Private,c))) p]):l) = map ([Fact KDFact annot [FAPP (NoEq (b,(n,Private,c))) p]] ++) (decompose l)
-    decompose ((Fact KUFact annot [FAPP (AC (ACfct (b,(Private,c)))) p]):l) = map ([Fact KDFact annot [FAPP (AC (ACfct (b,(Private,c)))) p]] ++) (decompose l)
+    decompose ((Fact KUFact annot [FAPP (NoEq (b,(n,Private,c,ndc))) p]):l) = map ([Fact KDFact annot [FAPP (NoEq (b,(n,Private,c,ndc))) p]] ++) (decompose l)
+    decompose ((Fact KUFact annot [FAPP (AC (ACfct (b,(Private,c,ndc)))) p]):l) = map ([Fact KDFact annot [FAPP (AC (ACfct (b,(Private,c,ndc)))) p]] ++) (decompose l)
     decompose ((Fact KUFact annot [FAPP s p]):l) = map ([Fact KDFact annot [FAPP s p]] ++) (decompose l) ++ [x1 ++ y | x1 <- decompose (map (\x -> Fact KUFact annot [x]) p), y <- decompose l]
     decompose (f:l) = map ([f] ++) (decompose l)
     decompose [] = [[]]
 
-    emptyThy = Theory "checkReduction" "checkReduction" [] [] (toSignaturePure sig) intrR [] (Option False False False False False False False False False False S.empty [] 10 5) False
-
-    -- tabProof = concatMap checkProofStatuses provenTheory
-    -- provenTheory = map (proveTheory (const True) defaultProver) closedTheory
-    -- closedTheory = map (\t -> closeTheoryWithMaude sig t False False) modifiedTheory -- no AutoSources
-    -- modifiedTheory = zipWith (\s t -> (addRules (newRules s) . addLemmas (newLemmas s) . addRestrictions [newRestriction0,newRestriction1]) t) setD (repeat emptyThy)
+    emptyThy = Theory "checkDeduction" "checkDeduction" [] [] (toSignaturePure sig) intrR [] (Option False False False False False False False False False False S.empty [] ocLimit satLimit) False
 
     tabProof1 = concatMap checkProofStatuses provenTheory1
     provenTheory1 = map (proveTheory (const True) defaultProver) closedTheory1
     closedTheory1 = map (\t -> closeTheoryWithMaude sig t False False) modifiedTheory1 -- no AutoSources
-    modifiedTheory1 = zipWith (\s t -> (addRules (newRules s) . addLemmas (newLemmas s) . addRestrictions [newRestriction0,newRestriction2]) t) setD (repeat emptyThy)
+    modifiedTheory1 = map (\s -> (addRules (newRules s) . addLemmas (newLemmas s) . addRestrictions [newRestriction0,newRestriction2]) emptyThy) setD
 
     tabProof2 = concatMap checkProofStatuses provenTheory2
     provenTheory2 = map (proveTheory (const True) defaultProver) closedTheory2
     closedTheory2 = map (\t -> closeTheoryWithMaude sig t False False) modifiedTheory2 -- no AutoSources
-    modifiedTheory2 = zipWith (\s t -> (addRules (newRules s) . addLemmas (newLemmas s) . addRestrictions [newRestriction0]) t) setD (repeat emptyThy)
+    modifiedTheory2 = map (\s -> (addRules (newRules s) . addLemmas (newLemmas s) . addRestrictions [newRestriction0]) emptyThy) setD
  
-    tabTheory (th1:thq) = render (prettyTheory prettySignaturePure prettyOpenRuleCacheWithLimit prettyOpenProtoRule prettyProof prettyTranslationElement th1) ++ " \n\n " ++ tabTheory thq
+    tabTheory (th1:thq) = render (prettyTheory prettySignaturePure prettyOpenRuleCache{-WithLimitAndNDC-} prettyOpenProtoRule prettyProof prettyTranslationElement th1) ++ " \n\n " ++ tabTheory thq
     tabTheory [] = ""
-
-    -- trace ("\ntheory : \n" ++ tabTheory modifiedTheory)
 
     newRules s = [OpenProtoRule (Rule (ProtoRuleEInfo (StandRule "Out0") (RuleAttributes Nothing Nothing False False Nothing) []) (pre s) (co s) (a s) []) []]
     varD s = frees $ concatMap factTerms s
@@ -257,20 +260,27 @@ derivationTest sig intrR fact terms = setD == [] || checkProofd tabProof1 || che
     pre = freesToFresh . varFresh
     co = map (outFact . msgToFreshTerms) . concatMap factTerms
     a s = [protoFact Linear "Generated_0" (map (msgToFreshTerms . lvarToLnterm) (varD s)),factOnlyOnce]
-    alemma s = [protoFact Linear "Generated_0" (map lvarToLnterm (varD s))]
+    aLemma s = [protoFact Linear "Generated_0" (map lvarToLnterm (varD s))]
 
-    newLemmas s = [Lemma "Derivation" "Derivation" False AllTraces (Not (existFormula $ landFormula $ alemma s ++ [kLogFact (head (factTerms fact))])) [] (unproven ())] -- FIX-ME : the head should be a problem
+    newLemmas s = [Lemma "Deduction" "Deduction" False AllTraces f (Just f) [] (unproven ())]
+      where
+        f = Not (existFormula $ landFormula $ aLemma s ++ [kLogFact (head (factTerms fact))]) -- FIXME : the head could be a problem
     
-    newRestriction0 = Restriction "OnlyOnce" (forAllFormula (factAnd "i" .&&. factAnd "j" .==>. factEq "i" "j"))
+    newRestriction0 :: Restriction
+    newRestriction0 = Restriction "OnlyOnce" f (Just f)
+      where
+        f = forAllFormula (factAnd "i" .&&. factAnd "j" .==>. factEq "i" "j")
     factAnd x = Ato (Action (LIT (Var (Free (LVar x LSortNode 0)))) factOnlyOnce)
     factEq x y = Ato (EqE (LIT (Var (Free (LVar x LSortNode 0)))) (LIT (Var (Free (LVar y LSortNode 0)))))
     factOnlyOnce = protoFact Linear "OnlyOnce" []
 
-    -- newRestriction1 = Restriction "OnlyOnceD" (forAllFormula (factAndD "i" .&&. factAndD "j" .==>. factEq "i" "j"))
     factAndD x = Ato (Action (LIT (Var (Free (LVar x LSortNode 0)))) factOnlyOnceD)
     factOnlyOnceD = protoFact Linear "OnlyOnceD" []
 
-    newRestriction2 = Restriction "OnlyOnceD" (forAllFormula (factAndD "i" .&&. factAndD "j" .&&. factAndD "k" .==>. factEq "i" "j" .||. factEq "i" "k" .||. factEq "j" "k" ))
+    newRestriction2 :: Restriction
+    newRestriction2 = Restriction "OnlyOnceD" f (Just f)
+     where
+      f = forAllFormula (factAndD "i" .&&. factAndD "j" .&&. factAndD "k" .==>. factEq "i" "j" .||. factEq "i" "k" .||. factEq "j" "k" )
 
     defaultProver = replaceSorryProver $ runAutoProver (AutoProver Nothing Nothing Nothing CutDFS False)
 
@@ -288,185 +298,93 @@ derivationTest sig intrR fact terms = setD == [] || checkProofd tabProof1 || che
       Lit _                              -> t
       FApp f as                          -> termViewToTerm $ FApp f (map msgToFreshTerms as)
 
-builtInDestrRule :: [ByteString]
-builtInDestrRule = map (BC.append (BC.pack "_")) symBI
+-- | Check if the chain of the two given intruder rules can be reduced. This is done by checking if the conclusion of one rule can be unified with a 
+--   premise of the other rule and then checking if the resulting terms can be derived from the premises of both rules without chaining.
+--   If the two rules cannot be chained, then Nothing is returned. If they can be chained, then Just True is returned if the chain can be reduced and
+--   Just False is returned if the chain cannot be reduced.
+ndcCheck :: Integer -> Integer -> SignatureWithMaude -> OpenRuleCache -> IntrRuleAC -> IntrRuleAC -> Maybe Bool
+ndcCheck ocLimit satLimit sig intrR r@(Rule (DestrRule _ i _ _ _) ((Fact KDFact _ _):_) conc@[Fact KDFact _ _] _ _) r1@(Rule (DestrRule _ j _ _ _) ((Fact KDFact _ _):_) [Fact KDFact _ _] _ _)
+  | i /= 1 && j /= 1 =
+  case runMaude $ unifyLNFactEqs [Equal (head conc) (getDeconstrRuleKDPrem freshInst1)] of
+    []    -> Nothing
+    subst -> Just (checkDeduction (applySubsts subst r freshInst1))
   where
-    symBI = [expSymString, invSymString, unionSymString, xorSymString, pmultSymString, emapSymString, fstSymString, sndSymString]
-
--- FIX-ME : It could be better to add the functions inside the deconstruction rules instead of parsing the rule name
-constrNameFunc :: ByteString -> ByteString
-constrNameFunc name = case supprPos (name_decompose name) of
-  [s1] -> s1
-  s1:sq -> BC.intercalate (BC.pack "_") (s1:sq)
-  [] -> error "No Deconstruction Chain Check: This case should not happen, please report it on the github page"
-
-  where
-    name_decompose = tail . BC.split '_'
-
-    supprPos :: [ByteString] -> [ByteString]
-    supprPos (n1:nq) = case readMaybe (BC.unpack n1) :: Maybe Int of
-      Just _ -> supprPos nq
-      Nothing -> n1:nq
-    supprPos [] = []
-
-checkChainReduction :: SignatureWithMaude -> OpenRuleCache -> IntrRuleAC -> IntrRuleAC -> Bool
-checkChainReduction sig intrR r@(Rule (DestrRule name0 i _ _) ((Fact KDFact _ _):_) conc@[Fact KDFact _ _] _ _) r1@(Rule (DestrRule name1 j _ _) ((Fact KDFact _ _):_) [Fact KDFact _ _] _ _)
-  | not (any (`BC.isSuffixOf` name0) builtInDestrRule) && not (any (`BC.isSuffixOf`name1) builtInDestrRule) && i /= 1 && j /= 1 =
-  case runMaude $ unifyLNFactEqs [Equal (head conc) f1] of
-    [] -> True
-    subst -> dedAux (auxMatcher subst r inst1)
-    
-    -- trace ("\nsigma instance : " ++ concatMap ppPair (auxMatcher subst r inst1) ++ "\n\nsigma instance filtered : " ++ concatMap ppPair (auxMatcherFilter (auxMatcher subst r inst1)))
-  where
-    hnd = L.get sigmMaudeHandle sig
-    msig = mhMaudeSig hnd
-    acsig = S.toList (acUserFunSyms msig)
+    hnd        = L.get sigmMaudeHandle sig
     runMaude   = (`runReader` hnd)
-    inst1 = r1 `renameAvoiding` r
-
+    freshInst1 = r1 `renameAvoiding` r
     -- ppPair (x, y) = render (prettyIntrRuleAC x) ++ " \n " ++ render (prettyIntrRuleAC y)
 
-    getPremsFactKD (Rule _ (fact:_) _ _ _) = fact
-    getPremsFactKD _ = error "No Deconstruction Chain Check: This case should not happen, please report it on the github page" 
+    -- Apply the given substitutions to the two given intruder rules and return all resulting rules.
+    applySubsts :: [LNSubstVFresh] -> IntrRuleAC -> IntrRuleAC -> [(IntrRuleAC,IntrRuleAC)]
+    applySubsts s ru0 ru1 = evalFreshAvoiding (appSubst s ru0 ru1) (ru0, ru1)
 
-    getPremsFactTail (Rule _ ((Fact KDFact _ _):tls) _ _ _) = tls
-    getPremsFactTail _ = error "No Deconstruction Chain Check: This case should not happen, please report it on the github page" 
+    -- Apply the deduction check to all pairs of rules resulting from applying the unifying substitutions to the two given intruder rules.
+    checkDeduction ((s1,h1):sq) = chainedRulesDeductionTest ocLimit satLimit sig intrR s1 h1 && checkDeduction sq
+    checkDeduction []           = True
+ndcCheck _ _ _ _ _ _ = Nothing
 
-    getConcFact (Rule _ _ [fact] _ _) = fact
-    getConcFact _ = error "No Deconstruction Chain Check: This case should not happen, please report it on the github page" 
-
-    f1 = getPremsFactKD inst1
-
-    name_func = constrNameFunc
-
-    isACfctDR n ((n1,(_,_)):l) = n == n1 || isACfctDR n l
-    isACfctDR _ [] = False 
-
-
-    auxMatcher :: [LNSubstVFresh] -> IntrRuleAC -> IntrRuleAC -> [(IntrRuleAC,IntrRuleAC)]
-    auxMatcher s ru0 ru1 = evalFreshAvoiding (appSubst s ru0 ru1) (ru0, ru1)
-
-    dedAux ((s1,h1):sq) = dedTest s1 h1 && dedAux sq
-    dedAux [] = True
-
-    dedTest :: IntrRuleAC -> IntrRuleAC -> Bool
-    dedTest instSigma inst1Sigma = aux prems
-
-      where
-        terms = getPremsFactTail instSigma ++ getPremsFactTail inst1Sigma ++ [getPremsFactKD instSigma]
-        termsT = foldMap getFactTerms terms
-        prems = getConcFact inst1Sigma
-
-        factOnlyOnce = protoFact Linear "OnlyOnceD" []
-
-        intrRmodified = map boundToOne intrR
-        boundToOne rule@(Rule (DestrRule name _ subterm constant) premis concs acts nvs) | getRuleName rule == getRuleName r = Rule (DestrRule name 1 subterm constant) premis concs (acts ++ [factOnlyOnce]) nvs
-        boundToOne rule@(Rule (DestrRule name _ _ _) _ _ _ _) | any (`BC.isSuffixOf` name) builtInDestrRule = rule
-        boundToOne rule@(Rule (DestrRule name _ True _) _ _ _ _) | not (isACfctDR (name_func name) acsig) = rule
-        boundToOne (Rule (DestrRule name 0 subterm constant) premis concs acts nvs) = Rule (DestrRule name 1 subterm constant) premis concs acts nvs
-        boundToOne rr = rr
-
-
-        aux fa@(Fact KDFact _ [f]) = (dedNaive f termsT || derivationTest sig intrRmodified fa terms)
-        aux _                     = error "No Deconstruction Chain Check: This case should not happen, please report it on the github page" 
-        
-
-    -- auxMatcherFilter = filter nullIntersectAC
-    -- nullIntersectAC (i0@(Rule (DestrRule ni0 _ _ _) _ _ _ _),i1) = not (isACfctDR (name_func ni0) acsig) || not (all has2prems allR) || ((frees (getPremsFactKD i0) `intersect` frees (getConcFact i1)) /= [])
-    -- nullIntersectAC _ = True
-
-    -- has2prems (Rule (DestrRule _ _ _ _) prems _ _ _) = length prems == 2
-    -- has2prems _ = False
-
-    -- searchMatcheraux ((s1,h1):sq)  = foldr (\ru -> (|| searchMatcher s1 h1 ru)) False allR && searchMatcheraux sq
-    -- searchMatcheraux [] = True
-
-    -- searchMatcher :: IntrRuleAC -> IntrRuleAC -> IntrRuleAC -> Bool
-    -- searchMatcher instSigma inst1Sigma inst2init =
-    --   case doMatch (sigmaRHS1 `matchFact` rhs2 <> sigmaF `matchFact` f2) of
-    --     [] -> False
-    --     match -> auxDeducible match
-    --   where
-    --     doMatch match = runReader (solveMatchLNTerm match) hnd
-
-    --     inst2 = inst2init `renameAvoiding` (inst1Sigma, instSigma)
-
-    --     f2 = getPremsFactKD inst2
-    --     rhs2 = getConcFact inst2
-
-    --     sigmaRHS1 = getConcFact inst1Sigma
-    --     sigmaF = getPremsFactKD instSigma
-
-    --     auxDeducible (m1:mq) = checkDeducible m1 || auxDeducible mq
-    --     auxDeducible [] = False
-
-    --     checkDeducible :: Subst Name LVar -> Bool
-    --     checkDeducible m = aux prems
-
-    --      where
-    --       terms = getPremsFactTail instSigma ++ getPremsFactTail inst1Sigma
-    --       termsT = foldMap getFactTerms terms
-    --       inst2sigma2 = apply m inst2
-    --       prems = getPremsFactTail inst2sigma2
-
-    --       factOnlyOnce = protoFact Linear "OnlyOnceD" []
-
-    --       intrRmodified = map boundToOne intrR
-    --       boundToOne rule@(Rule (DestrRule name _ subterm constant) premis concs acts nvs) | getRuleName rule == getRuleName r = Rule (DestrRule name 1 subterm constant) premis concs (acts ++ [factOnlyOnce]) nvs
-    --       boundToOne rule@(Rule (DestrRule name _ _ _) _ _ _ _) | any (`BC.isSuffixOf` name) builtInDestrRule = rule
-    --       boundToOne rule@(Rule (DestrRule name _ True _) _ _ _ _) | not (isACfctDR (name_func name) acsig) = rule
-    --       boundToOne (Rule (DestrRule name 0 subterm constant) premis concs acts nvs) = Rule (DestrRule name 1 subterm constant) premis concs acts nvs
-    --       boundToOne rr = rr
-
-    --       aux (fa@(Fact KUFact _ [f]):q) = (dedNaive f termsT || derivationTest sig intrRmodified fa terms) && aux q
-    --       aux ((Fact KDFact _ _):_) = error "Destructor Boundedness Check: This case should not happen, please report it on the github page" 
-    --       aux []                    = True
-    --       aux _                     = error "Destructor Boundedness Check: This case should not happen, please report it on the github page" 
-
-
-
-checkChainReduction _ _ _ _ = False
-
-
-applyChainReduction :: SignatureWithMaude -> OpenRuleCache -> [[IntrRuleAC]] -> Bool -> [IntrRuleAC]
-applyChainReduction _ intrR _ False = intrR
-applyChainReduction sig intrR (t1:tq) True = (if checkChainReductionIter tupleRule then set1ru t1 else t1) ++ applyChainReduction sig intrR tq True
+-- Check if the conclusion of the second rule can be derived from the premises of both rules without chaining.
+chainedRulesDeductionTest :: Integer -> Integer -> SignatureWithMaude -> OpenRuleCache -> IntrRuleAC -> IntrRuleAC -> Bool
+chainedRulesDeductionTest ocLimit satLimit sig intrR instSigma inst1Sigma = aux factToDeduce
   where
-    tupleRule = [(x,y) | x <- t1, y <- t1]
-    checkChainReductionIter = foldr (\(x,y) -> (&& checkChainReduction sig intrR x y)) True
+    facts = getDeconstrRulePremsTail instSigma ++ getDeconstrRulePremsTail inst1Sigma ++ [getDeconstrRuleKDPrem instSigma]
+    terms = foldMap getFactTerms facts
+    factToDeduce = getConcFact inst1Sigma
 
-    set1ru = map change
+    factOnlyOnce = protoFact Linear "OnlyOnceD" []
 
-    change (Rule (DestrRule name _ subterm constant) prems concs acts nvs) = Rule (DestrRule name 1 subterm constant) prems concs acts nvs
-    change r = r
-applyChainReduction _ _ [] _ = []
+    -- intruder rules but with all deconstruction rules for the given AC symbol limited to one application for deduction checks
+    intrRmodified = map boundToOne intrR
 
--- | Close an intruder rule; i.e., compute maximum number of consecutive applications and variants
---   Should be parallelized like the variant computation for protocol rules (JD)
-closeIntrRule :: MaudeHandle -> IntrRuleAC -> [IntrRuleAC]
-closeIntrRule hnd (Rule (DestrRule name (-1) subterm constant) prems@((Fact KDFact _ [t]):_) concs@[Fact KDFact _ [rhs]] acts nvs) =
-   [ru]
-    where
-      ru = Rule (DestrRule name (if containsOnlyNoEq rhs && containsOnlyNoEq t && runMaude (unifiableLNTerms rhs t)
-                              then (length (positions t)) - (if (isPrivateFunction t) then 1 else 2)
-                              -- We do not need to count t itself, hence - 1.
-                              -- If t is a private function symbol we need to permit one more rule
-                              -- application as there is no associated constructor.
-                              else 0) subterm constant) prems concs acts nvs
-        where
-           runMaude = (`runReader` hnd)
-closeIntrRule _ ir@(Rule (DestrRule name _ _ _) _ _ _ _) | any (`BC.isSuffixOf`name) builtInDestrRule = [ir]
-closeIntrRule _ (Rule (DestrRule _ _ False _) _ _ _ _) = error "closeIntrRule: This case should not happen, please report it on the github page" --variantsIntruder hnd id False False ir
-closeIntrRule _   ir                                        = [ir]
+    boundToOne rule@(Rule (DestrRule name i subterm constant funs) premis concs acts nvs)
+        | getDestrRuleFunction rule == getDestrRuleFunction instSigma   = Rule (DestrRule name i subterm constant (mapHead (setNDC IsNDC) funs)) premis concs (acts ++ [factOnlyOnce]) nvs -- for the rule instance we want to check, we add the factOnlyOnce to the actions to ensure that it is only applied once
+    boundToOne rule@(Rule (DestrRule name _ _ _ _) _ _ _ _)
+        | any (`BC.isSuffixOf` name) builtInDestrRuleInclPair = rule -- do not touch built-in deconstruction rules
+    boundToOne (Rule (DestrRule name 0 subterm constant funs) premis concs acts nvs)
+                                                      = Rule (DestrRule name 1 subterm constant funs) premis concs acts nvs -- bound the rule to one application other rules
+    boundToOne rr                                     = rr
 
+    aux fa@(Fact KDFact _ [f]) = dedNaive f terms || deductionCheck ocLimit satLimit sig intrRmodified fa facts
+    aux _                      = error "No Deconstruction Chain Check: This case should not happen, please report it on the github page" 
 
-prettyChainReduction :: SignatureWithMaude -> String -> OpenRuleCache -> [[IntrRuleAC]] -> Bool -> [IntrRuleAC]
-prettyChainReduction s name o t b = unsafePerformIO $ do
-  traceM ("[Theory " ++ name ++ "] No Deconstruction Chain checks started")
-  rule <- evaluate . force $ applyChainReduction s o t b
-  traceM ("Result : " ++ render (prettyOpenRuleCacheWithLimit rule))
+-- | Apply no deconstruction chain check to a list of intruder rules. The first argument states
+--   whether the rules belong to the diff-mode intruder rules, whose NDC property is recorded
+--   separately in the signature.
+applyNDCcheck :: Bool -> Integer -> Integer -> SignatureWithMaude -> OpenRuleCache -> [[IntrRuleAC]] -> (SignatureWithMaude, OpenRuleCache)
+applyNDCcheck forDiff ocLimit satLimit sig intrR (t1:tq)  =
+    if checkChainReductionIter ruleTuples == (True, False)
+      then trace ("Function " ++ showFunSymName f ++ " has the NDC property" ++ modeSuffix ++ ".") (setNDCinSig' sig' f, map setNDCToTrue t1 ++ intrR')
+      else trace ("Function " ++ showFunSymName f ++ " does not have the NDC property" ++ modeSuffix ++ ".") (sig', t1 ++ intrR')
+  where
+    f = fromJust (getDestrRuleFunction $ head t1)
+    (sig', intrR') = applyNDCcheck forDiff ocLimit satLimit sig intrR tq
+    modeSuffix = if forDiff then " in diff mode" else ""
+    setNDCinSig' s fs = joinNDCinSigWMaude s fs (if forDiff then IsNDCDiff else IsNDC)
+    ruleTuples = [(x,y) | x <- t1, y <- t1]
+    checkChainReductionIter = foldr g (True, True)
+      where
+        g (x,y) (resSoFar, allNotChainable) = 
+          case ndcCheck ocLimit satLimit sig intrR x y of
+            Just result -> (resSoFar && result, False)
+            Nothing -> (resSoFar, allNotChainable)
+
+    setNDCToTrue (Rule (DestrRule name i subterm constant funs) prems concs acts nvs) = Rule (DestrRule name i subterm constant (mapHead (addNDC (if forDiff then IsNDCDiff else IsNDC)) funs)) prems concs acts nvs
+    setNDCToTrue r = r
+applyNDCcheck _ _ _ sig _ [] = (sig, [])
+
+-- | Pretty print the result of chain reduction checks. The first argument states whether the
+--   rules belong to the diff-mode intruder rules.
+prettyNDCcheck :: Bool -> Integer -> Integer -> SignatureWithMaude -> String -> OpenRuleCache -> (SignatureWithMaude, OpenRuleCache)
+prettyNDCcheck forDiff ocLimit satLimit sig name initRules = unsafePerformIO $ do
+  let (builtInOrConstrOrNDC, nonBuiltInDestr) = partition (\x -> isBuiltInIntruderRule x || isConstrRule x || isJust (if forDiff then isNDCDiffRule x else isNDCRule x)) initRules
+  -- for the no deconstruction check we group deconstruction rules of the same function together based on the rule function, as the NDC property is a property of the function and not of the individual rules. We then apply the NDC check to each group of rules separately, as the NDC property is a property of the function and not of the individual rules. This also allows us to parallelize the NDC check for different functions.
+  let t' = groupBy ((==) `on` getDestrRuleFunction) $ sortOn getDestrRuleFunction nonBuiltInDestr
+  let (subtermRules, t) = partition (all isSubtermRule) t' -- we only check the NDC property for deconstruction rules that are not subterm rules
+  traceM ("[Theory " ++ name ++ "] No Deconstruction Chain checks " ++ (if forDiff then "for diff mode " else "") ++ "started")
+  (sig', rules) <- evaluate . force $ applyNDCcheck forDiff ocLimit satLimit sig initRules t
+  -- traceM ("Result : " ++ render (prettyOpenRuleCacheWithLimitAndNDC $ rules ++ builtInOrConstrOrNDC))
   traceM ("[Theory " ++ name ++ "] No Deconstruction Chain checks ended")
-  return rule
+  return (sig', rules ++ builtInOrConstrOrNDC ++ concat subtermRules) -- we add the built-in rules back to the intruder rules, as they are not modified by the NDC check
 
 -- | Close a rule cache. Hower, note that the
 -- requires case distinctions are not computed here.
@@ -481,7 +399,7 @@ closeRuleCache :: IntegerParameters  -- ^ Parameters for open chains and saturat
                -> Bool               -- ^ Diff or not
                -> Bool               -- ^ isSapic or not
                -> ClosedRuleCache    -- ^ Cached rules and case distinctions.
-closeRuleCache parameters restrictions typAsms forcedInjFacts sig protoRules intrRules verbose isdiff isSapic = -- trace ("closeRuleCache: " ++ show classifiedRules) $ 
+closeRuleCache parameters restrictions typAsms forcedInjFacts sig protoRules intrRules verbose isdiff isSapic =
    ClosedRuleCache
         classifiedRules rawSources refinedSources injFactInstances
   where
@@ -489,7 +407,7 @@ closeRuleCache parameters restrictions typAsms forcedInjFacts sig protoRules int
         sig classifiedRules injFactInstances RawSource [] AvoidInduction Nothing Nothing
         (error "closeRuleCache: trace quantifier should not matter here")
         (error "closeRuleCache: lemma name should not matter here") [] verbose isdiff
-        (all isSubtermRule {-- $ trace (show destr ++ " - " ++ show (map isSubtermRule destr))-} destr) (any isConstantRule destr)
+        (all isSubtermRule destr) (any isConstantRule destr)
         isSapic
 
     -- Maude handle
@@ -509,8 +427,8 @@ closeRuleCache parameters restrictions typAsms forcedInjFacts sig protoRules int
     refinedSources     = refineWithSourceAsms parameters typAsms ctxt0 rawSources
 
     -- classifying the rules
-    rulesAC = (fmap IntrInfo                      <$> intrRules) <|>
-              ((fmap ProtoInfo . L.get cprRuleAC) <$> protoRules)
+    rulesAC = (fmap IntrInfo                    <$> intrRules) <|>
+              (fmap ProtoInfo . L.get cprRuleAC <$> protoRules)
 
     anyOf ps = partition (\x -> any ($ x) ps)
 

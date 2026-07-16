@@ -1,4 +1,6 @@
-theory FOO_Eligibility begin
+theory FOO_Eligibility
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -11,10 +13,6 @@ equations [convergent]:
     snd(<x.1, x.2>) = x.2,
     unblind(blind(m, r), r) = m,
     unblind(sign(blind(m, r), sk), r) = sign(m, sk)
-
-
-
-
 
 rule (modulo E) Register_Voter_pk:
    [ Fr( ~ltkV ) ]
@@ -150,9 +148,9 @@ next
             by contradiction /* from formulas */
           next
             case V_1_case_3
-            solve( !KU( ~b ) @ #vk.4 )
+            solve( !KU( ~b ) @ #vk.3 )
               case A_1
-              solve( (#vr.12, 0) ~~> (#vk.1, 0) )
+              solve( (#vr.10, 0) ~~> (#vk.1, 0) )
                 case d_0_open
                 by contradiction /* forbidden KD-fact */
               qed
@@ -162,9 +160,9 @@ next
             qed
           next
             case V_1_case_4
-            solve( !KU( ~b ) @ #vk.3 )
+            solve( !KU( ~b ) @ #vk.4 )
               case A_1
-              solve( (#vr.10, 0) ~~> (#vk.1, 0) )
+              solve( (#vr.12, 0) ~~> (#vk.1, 0) )
                 case d_0_open
                 by contradiction /* forbidden KD-fact */
               qed
@@ -313,44 +311,14 @@ solve( St_C_1( A, commit(vote, r) ) ▶₁ #j )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-WARNING: the following wellformedness checks failed!
-
-Message Derivation Checks
-=========================
-
-  The variables of the following rule(s) are not derivable from their premises, you may be performing unintended pattern matching.
-
-Rule C_2: 
-Failed to derive Variable(s): x
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: d224b4b965f014cbf18a3a01c5afbd5b20576914 (with uncommited changes), branch: develop
-Compiled at: 2025-09-08 09:04:28.158015016 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -362,10 +330,7 @@ summary of summaries:
 analyzed: examples/post17/foo_eligibility.spthy
 
   output:          examples/post17/foo_eligibility.spthy.tmp
-  processing time: 1.85s
-  
-  WARNING: 1 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 0.31s
   
   types (all-traces): verified (43 steps)
   exec (exists-trace): verified (9 steps)

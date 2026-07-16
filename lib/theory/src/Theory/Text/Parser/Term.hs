@@ -13,9 +13,10 @@ module Theory.Text.Parser.Term (
     , llit
     , natLit
     , term
+    , acterm
     , llitNoPub
     , reservedBuiltins
-    , llitWithNode    
+    , llitWithNode
 )
 where
 
@@ -33,6 +34,9 @@ import           Theory.Text.Parser.Token
 import           Data.ByteString.Internal        (unpackChars)
 import Data.Functor (($>))
 
+-- | An AC operator
+opAC :: ACfctSym -> Parser ()
+opAC (op, _) = symbol_ (BC.unpack op)
 
 -- | Parse a lit with logical variables parsed by @varp@
 vlit :: Parser v -> Parser (NTerm v)
@@ -55,18 +59,16 @@ llitNoPub = asum [freshTerm <$> freshName, varTerm <$> msgvar]
 
 -- | Lookup the arity of a non-ac symbol. Fails with a sensible error message
 -- if the operator is not known.
-lookupArity :: String -> Parser (Int, Privacy,Constructability, ACstate)
+lookupArity :: String -> Parser (Int, Privacy,Constructability, ACstate, NDCstate)
 lookupArity op = do
     maudeSig <- sig <$> getState
-    case lookup (BC.pack op) (S.toList (noEqorACSet (userDefineFunSyms maudeSig)) ++ [(emapSymString, (2,Public,Constructor,NotAC))]) of
-        Nothing    -> fail $ "unknown operator `" ++ op ++ "'"
-        Just (k,priv,cnstr,acstate) -> return (k,priv,cnstr,acstate)
-        -- Just (NoEqUser (_,(k,priv,cnstr))) -> return (k,priv,cnstr,NotAC)
-        -- Just (ACfctUser (_,(k,priv,cnstr))) -> return (k,priv,cnstr,IsAC)
-        where
-          noEqorACSet = S.map function
-          function (NoEqUser (o,(k,p,c))) = (o,(k,p,c,NotAC))
-          function (ACfctUser (o,(p,c))) = (o,(2,p,c,IsAC))
+    case lookup (BC.pack op) (map extractName(S.toList (userDefinedFunSyms maudeSig) ++ map NoEqUser (S.toList (macroNames maudeSig) ++ [(emapSymString, (2,Public,Constructor,NotNDC))]))) of
+        Nothing                            -> fail $ "unknown operator `" ++ op ++ "'"
+        Just (NoEqUser (_,(k,priv,cnstr,ndc))) -> return (k,priv,cnstr,NotAC,ndc)
+        Just (ACfctUser (_,(priv,cnstr,ndc)))  -> return (2,priv,cnstr,IsAC,ndc)
+  where
+    extractName (NoEqUser (o, r))  = (o, NoEqUser (o, r))
+    extractName (ACfctUser (o, r)) = (o, ACfctUser (o, r))
 
 
 reservedBuiltins :: [[Char]]
@@ -88,19 +90,19 @@ naryOpApp eqn plit = do
     op <- identifier
     when (eqn && op `elem` reservedBuiltins)
       $ error $ "`" ++ show op ++ "` is a reserved function name for builtins."
-    (k,priv,constr,acstate) <- lookupArity op
+    (k,priv,constr,acstate,ndcstate) <- lookupArity op
     ts <- parens $ if k == 1
                      then return <$> tupleterm eqn plit
                      else commaSep (msetterm eqn plit)
-    let k' = (length ts)
+    let k' = length ts
     when (acstate == NotAC && (k /= k')) $
         fail $ "operator `" ++ op ++"' has arity " ++ show k ++
                ", but here it is used with arity " ++ show k'
     --let app o = if BC.pack op == emapSymString then fAppC EMap else fAppNoEq o
     case (BC.pack op,(k,priv,constr,acstate)) of
       (o,(_,_,_,_)) | o == emapSymString -> return $ fAppC EMap ts
-      (_,(_,_,_,NotAC)) -> return $ fAppNoEq (BC.pack op, (k,priv,constr)) ts
-      (_,(_,_,_,IsAC)) -> return $ fAppAC (ACfct (BC.pack op, (priv,constr))) ts
+      (_,(_,_,_,NotAC)) -> return $ fAppNoEq (BC.pack op, (k,priv,constr,ndcstate)) ts
+      (_,(_,_,_,IsAC)) -> return $ fAppAC (ACfct (BC.pack op, (priv,constr,ndcstate))) ts
     --return $ app (BC.pack op, (k,priv,constr)) ts
 
 -- | Parse a binary operator written as @op{arg1}arg2@.
@@ -109,14 +111,14 @@ binaryAlgApp eqn plit = do
     op <- identifier
     when (eqn && op `elem` reservedBuiltins)
       $ error $ "`" ++ show op ++ "` is a reserved function name for builtins."
-    (k,priv,constr,acstate) <- lookupArity op
+    (k,priv,constr,acstate,ndcstate) <- lookupArity op
     arg1 <- braced (tupleterm eqn plit)
-    arg2 <- term plit eqn
+    arg2 <- term eqn plit
     when (k /= 2) $ fail
       "only operators of arity 2 can be written using the `op{t1}t2' notation"
     case acstate of
-      NotAC -> return $ fAppNoEq (BC.pack op, (k,priv,constr)) [arg1, arg2]
-      IsAC -> return $ fAppAC (ACfct (BC.pack op, (priv,constr))) [arg1, arg2]
+      NotAC -> return $ fAppNoEq (BC.pack op, (k,priv,constr,ndcstate)) [arg1, arg2]
+      IsAC -> return $ fAppAC (ACfct (BC.pack op, (priv,constr,ndcstate))) [arg1, arg2]
 
 diffOp :: Ord l => Bool -> Parser (Term l) -> Parser (Term l)
 diffOp eqn plit = do
@@ -133,13 +135,17 @@ diffOp eqn plit = do
   return $ fAppDiff (arg1, arg2)
 
 -- | Parse a term.
-term :: Ord l => Parser (Term l) -> Bool -> Parser (Term l)
-term plit eqn = asum
+term :: Ord l => Bool -> Parser (Term l) -> Parser (Term l)
+term eqn plit = asum
     [ pairing       <?> "pairs"
     , parens (msetterm eqn plit)
     , symbol "DH_neutral" *> pure fAppDHNeutral    
-    , symbol "1:nat"      *> pure fAppNatOne
-    , symbol "%1"         *> pure fAppNatOne
+    , symbol "1:nat"
+        *> requireNaturalNumbers "natural-number literal 1:nat"
+        *> pure fAppNatOne
+    , symbol "%1"
+        *> requireNaturalNumbers "natural-number literal %1"
+        *> pure fAppNatOne
     , symbol "1"          *> pure fAppOne
     , application        <?> "function application"
     , nullaryApp
@@ -153,11 +159,21 @@ term plit eqn = asum
       maudeSig <- sig <$> getState
       -- FIXME: This try should not be necessary.
       asum [ try (symbol (BC.unpack sym)) $> fApp fs []
-           | fs@(NoEq (sym,(0,_,_))) <- S.toList $ funSyms maudeSig ]
+           | fs@(NoEq (sym,(0,_,_,_))) <- S.toList $
+               funSyms maudeSig `S.union` S.map NoEq (macroNames maudeSig) ]
+
+-- | A left-associative sequence of user-defined AC operators.
+acterm :: Ord l => Bool -> Parser (Term l) -> Parser (Term l)
+acterm eqn plit = do
+    acsyms <- stACFunSyms . sig <$> getState
+    parseACSym $ S.toList acsyms
+  where
+    parseACSym [] = term eqn plit
+    parseACSym (op:ops) = chainl1 (parseACSym ops) ((\a b -> fAppACfct op [a,b]) <$ opAC op)
 
 -- | A left-associative sequence of exponentations.
 expterm :: Ord l => Bool -> Parser (Term l) -> Parser (Term l)
-expterm eqn plit = chainl1 (term plit eqn) (curry fAppExp <$ opExp)
+expterm eqn plit = chainl1 (acterm eqn plit) (curry fAppExp <$ opExp)
 
 -- | A left-associative sequence of multiplications.
 multterm :: Ord l => Bool -> Parser (Term l) -> Parser (Term l)
@@ -165,7 +181,7 @@ multterm eqn plit = do
     dh <- enableDH . sig  <$> getState
     if dh && not eqn -- if DH is not enabled, do not accept 'multterm's and 'expterm's
         then chainl1 (expterm eqn plit) ((\a b -> fAppAC Mult [a,b]) <$ opMult)
-        else term plit eqn
+        else acterm eqn plit
 
 -- | A left-associative sequence of xors.
 xorterm :: Ord l => Bool -> Parser (Term l) -> Parser (Term l)
@@ -187,7 +203,7 @@ msetterm eqn plit = do
 natterm :: Ord l => Bool -> Parser (Term l) -> Parser (Term l)
 natterm eqn plit = do
     nats <- enableNat . sig <$> getState
-    if nats && not eqn-- if xor is not enabled, do not accept 'xorterms's
+    if nats && not eqn-- if nat is not enabled, do not accept 'natterms'
         then chainl1 (xorterm eqn plit) ((\a b -> fAppAC NatPlus [a,b]) <$ opPlus)
         else xorterm eqn plit
 

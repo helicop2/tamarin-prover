@@ -1,4 +1,6 @@
-theory mini5 begin
+theory mini5
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -8,19 +10,9 @@ equations:
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
-
-
 heuristic: p
 
 section{* small example for progression function *}
-
-
-
-
-
-
-
-
 
 lemma A_possible:
   exists-trace "∃ #t. A( ) @ #t"
@@ -92,22 +84,6 @@ solve( State_122( ~prog_, s ) ▶₀ #t )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 rule (modulo E) MessageIDRule[color=#ffffff, process="new s.1;",
                               issapicrule, role='Process']:
    [ Fr( ~mid_ ) ] --> [ MID_Receiver( ~mid_ ), MID_Sender( ~mid_ ) ]
@@ -143,14 +119,14 @@ rule (modulo E) Init[color=#ffffff, process="|", issapicrule,
   */
 
 rule (modulo E) lookupsasx_0_12[color=#ffffff,
-                                process="lookup s.1 as x.1", derivchecks, issapicrule, role='Process']:
+                                process="lookup s.1 as x.1", no_derivcheck, issapicrule, role='Process']:
    [ State_12( ~prog_, s.1 ) ]
   --[ IsIn( s.1, x.1 ) ]->
    [ State_121( ~prog_, s.1, x.1 ) ]
 
   /*
   rule (modulo AC) lookupsasx_0_12[color=#ffffff,
-                                   process="lookup s.1 as x.1", derivchecks, issapicrule, role='Process']:
+                                   process="lookup s.1 as x.1", no_derivcheck, issapicrule, role='Process']:
      [ State_12( ~prog_, s ) ]
     --[ IsIn( s, x ) ]->
      [ State_121( ~prog_, s, x ) ]
@@ -213,14 +189,14 @@ rule (modulo E) eventB_0_1212[color=#ffffff, process="0", issapicrule,
   */
 
 rule (modulo E) lookupsasx_1_12[color=#ffffff,
-                                process="lookup s.1 as x.1", derivchecks, issapicrule, role='Process']:
+                                process="lookup s.1 as x.1", no_derivcheck, issapicrule, role='Process']:
    [ State_12( ~prog_, s.1 ) ]
   --[ IsNotSet( s.1 ) ]->
    [ State_122( ~prog_, s.1 ) ]
 
   /*
   rule (modulo AC) lookupsasx_1_12[color=#ffffff,
-                                   process="lookup s.1 as x.1", derivchecks, issapicrule, role='Process']:
+                                   process="lookup s.1 as x.1", no_derivcheck, issapicrule, role='Process']:
      [ State_12( ~prog_, s ) ]
     --[ IsNotSet( s ) ]->
      [ State_122( ~prog_, s ) ]
@@ -244,26 +220,63 @@ restriction set_in:
       (∀ #t1 yp.
         (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x y #t3.
+    (IsIn( x, y ) @ #t3) ⇒
+    (∃ #t2.
+      ((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ∧
+      (∀ #t1 yp.
+        (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
+  */
+
 restriction set_notin:
   "∀ x #t3.
     (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #t3.
+    (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
+  */
+
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 restriction Progress__to_111:
   "∀ prog_ #t.
     (ProgressFrom_( prog_ ) @ #t) ⇒ (∃ #t.1. ProgressTo_111( prog_ ) @ #t.1)"
+
+  /*
+  expanded formula:
+  "∀ prog_ #t.
+    (ProgressFrom_( prog_ ) @ #t) ⇒ (∃ #t.1. ProgressTo_111( prog_ ) @ #t.1)"
+  */
 
 restriction Progress__to_12111_or_12121_or_1221:
   "∀ prog_ #t.
@@ -272,17 +285,31 @@ restriction Progress__to_12111_or_12121_or_1221:
      ((∃ #t.1. ProgressTo_12121( prog_ ) @ #t.1) ∨
       (∃ #t.1. ProgressTo_1221( prog_ ) @ #t.1)))"
 
+  /*
+  expanded formula:
+  "∀ prog_ #t.
+    (ProgressFrom_( prog_ ) @ #t) ⇒
+    ((∃ #t.1. ProgressTo_12111( prog_ ) @ #t.1) ∨
+     ((∃ #t.1. ProgressTo_12121( prog_ ) @ #t.1) ∨
+      (∃ #t.1. ProgressTo_1221( prog_ ) @ #t.1)))"
+  */
+
 restriction progressInit:
   "∃ #t. Init( ) @ #t"
+
+  /*
+  expanded formula:
+  "∃ #t. Init( ) @ #t"
+  */
 
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -294,7 +321,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-progress/mini5.spthy
 
   output:          examples/sapic/fast/feature-progress/mini5.spthy.tmp
-  processing time: 0.17s
+  processing time: 0.06s
   
   A_possible (exists-trace): verified (9 steps)
   B_impossible (all-traces): verified (3 steps)

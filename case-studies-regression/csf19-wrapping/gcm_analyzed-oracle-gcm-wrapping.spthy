@@ -1,4 +1,6 @@
-theory PKCS11_aead begin
+theory PKCS11_aead
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -20,47 +22,62 @@ prio: {id}
   regex"DCtrIs\(d,C"""""
 prio: {id}
   regex"DCtr""""mimou"
-
-
 tactic: IV_Uniqueness
 presort: s
 prio: {id}
   regex"=""""" | regex"<""""" | regex"last\("""""
 prio: {id}
   regex"IV\("""""
-
-
 tactic: Key_IntegrityAndConfidentiality
 presort: s
 prio: {id}
   regex"CreateKey\(ek,"""""
 
-
-
-
-
 /* looping facts with injective instances: DCtr/2 */
-
-
 
 restriction UniqueInteger:
   "∀ n #i #j. ((IsInteger( n ) @ #i) ∧ (IsInteger( n ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ n #i #j. ((IsInteger( n ) @ #i) ∧ (IsInteger( n ) @ #j)) ⇒ (#i = #j)"
+  */
+
 restriction Lesser:
   "∀ x y #i. (LessThan( x, y ) @ #i) ⇒ (∃ z. (x++z) = y)"
+
+  /*
+  expanded formula:
+  "∀ x y #i. (LessThan( x, y ) @ #i) ⇒ (∃ z. (x++z) = y)"
+  */
 
 restriction TrueIsTrue:
   "∀ x #i. (IsTrue( x ) @ #i) ⇒ (x = true)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #i. (IsTrue( x ) @ #i) ⇒ (x = true)"
+  */
+
 restriction Equality:
   "∀ x y #i. (Eq( x, y ) @ #i) ⇒ (x = y)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x y #i. (Eq( x, y ) @ #i) ⇒ (x = y)"
+  */
+
 restriction Inequality:
   "∀ x #i. (Neq( x, x ) @ #i) ⇒ (⊥)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #i. (Neq( x, x ) @ #i) ⇒ (⊥)"
+  */
 
 rule (modulo E) One[color=#aaaaee]:
    [ ] --[ IsInteger( '1' ) ]-> [ !Integer( '1' ) ]
@@ -10605,34 +10622,14 @@ next
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -10644,7 +10641,7 @@ summary of summaries:
 analyzed: examples/csf19-wrapping/gcm.spthy
 
   output:          examples/csf19-wrapping/gcm.spthy.tmp
-  processing time: 41.74s
+  processing time: 30.64s
   
   origin (all-traces): verified (1596 steps)
   Counter_Monotonicity (all-traces): verified (875 steps)

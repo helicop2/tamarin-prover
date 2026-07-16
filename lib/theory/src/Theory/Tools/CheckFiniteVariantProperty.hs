@@ -353,11 +353,11 @@ collectAndSortSymbolsFromSig sig =
     -- Extract symbols from the sets using pattern matching on tuples
     -- For NoEqSym: (name, (arity, _, _))
     noEqSymbols = map extractNoEqSymbol (S.toList stFunSymsSet)
-      where extractNoEqSymbol (name, (arity, _, _)) = Symbol (BC.unpack name) arity "Syntactic"
+      where extractNoEqSymbol (name, (arity, _, _, _)) = Symbol (BC.unpack name) arity "Syntactic"
     
     -- For ACfctSym: (name, (_, _)) - AC symbols are always binary
     acSymbols = map extractACfctSymbol (S.toList stACFunSymsSet)
-      where extractACfctSymbol (name, (_, _)) = Symbol (BC.unpack name) 2 "AC"
+      where extractACfctSymbol (name, (_, _, _)) = Symbol (BC.unpack name) 2 "AC"
     
     allSymbols = noEqSymbols ++ acSymbols
 
@@ -416,12 +416,12 @@ buildFunSymMap sig =
     M.fromList noEqEntries `M.union` M.fromList acEntries
   where
     noEqEntries =
-        [ (BC.unpack name, (arity, NoEq (name, (arity, priv, constr))))
-        | (name, (arity, priv, constr)) <- S.toList (stFunSyms sig)
+        [ (BC.unpack name, (arity, NoEq (name, (arity, priv, constr, ndc))))
+        | (name, (arity, priv, constr, ndc)) <- S.toList (stFunSyms sig)
         ]
     acEntries =
-        [ (BC.unpack name, (2, AC (ACfct (name, (priv, constr)))))
-        | (name, (priv, constr)) <- S.toList (stACFunSyms sig)
+        [ (BC.unpack name, (2, AC (ACfct (name, (priv, constr, ndc)))))
+        | (name, (priv, constr, ndc)) <- S.toList (stACFunSyms sig)
         ]
 
 -- | Split a rule string on \" -> \"

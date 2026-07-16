@@ -1,32 +1,24 @@
-theory AC_counter begin
+theory AC_counter
+
+begin
 
 // Function signature and definition of the equational theory E
 
-functions: check_rep/2[destructor], fst/1, get_rep/1[destructor], list/2,
-           null/0, pair/2, prog/3, rep/2[private,constructor], report/1, snd/1,
-           succ/1
+functions: check_rep/2 [destructor], fst/1, get_rep/1 [destructor],
+           list/2, null/0, pair/2, prog/3, rep/2 [private,constructor], report/1,
+           snd/1, succ/1
 equations:
     check_rep(rep(x.1, x.2), x.2) = x.1,
     fst(<x.1, x.2>) = x.1,
     get_rep(rep(x.1, x.2)) = x.1,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: S
 
 /* looping facts with injective instances: L_CellLocked/2, L_PureState/2
 */
 
-
-
 predicate: Report( x, y )<=>¬(y = 'l')
-
-
-
-
-
-
 
 lemma attested_comput_second_step [reuse]:
   all-traces
@@ -45,31 +37,14 @@ by solve( State_1211111111111( StateChannel, lock, signedios, i2, o2,
                                <<o, list(i, 'init')>, x>, state
           ) ▶₀ #t1 )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 restriction Restr_ReportRule_1:
   "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'l'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'l'))"
+  */
 
 rule (modulo E) ReportRule[color=#ffffff, process="!", issapicrule,
                            role='Process']:
@@ -178,24 +153,18 @@ rule (modulo E) p_1_11111[color=#ffffff, process="!", issapicrule,
      [ State_111111( StateChannel, state ) ]
   */
 
-rule (modulo E) r_0_111111[color=#ffffff, process="r()", issapicrule,
+rule (modulo E) r_0_111111[color=#ffffff, process="r();", issapicrule,
                            role='Process']:
    [ State_111111( StateChannel, state.1 ) ]
   -->
-   [
-   State_1111111( StateChannel, state.1 ),
-   State_1111112( StateChannel, state.1 )
-   ]
+   [ State_1111111( StateChannel, state.1 ) ]
 
   /*
-  rule (modulo AC) r_0_111111[color=#ffffff, process="r()", issapicrule,
+  rule (modulo AC) r_0_111111[color=#ffffff, process="r();", issapicrule,
                               role='Process']:
      [ State_111111( StateChannel, state ) ]
     -->
-     [
-     State_1111111( StateChannel, state ),
-     State_1111112( StateChannel, state )
-     ]
+     [ State_1111111( StateChannel, state ) ]
   */
 
 rule (modulo E) lockstate_0_1111111[color=#405280,
@@ -213,7 +182,7 @@ rule (modulo E) lockstate_0_1111111[color=#405280,
   */
 
 rule (modulo E) lookupstateasst_0_11111111[color=#405280,
-                                           process="lookup state.1 as st.1", derivchecks, issapicrule,
+                                           process="lookup state.1 as st.1", no_derivcheck, issapicrule,
                                            role='r']:
    [
    State_11111111( StateChannel, state.1 ), L_PureState( state.1, st.1 ),
@@ -227,7 +196,7 @@ rule (modulo E) lookupstateasst_0_11111111[color=#405280,
 
   /*
   rule (modulo AC) lookupstateasst_0_11111111[color=#405280,
-                                              process="lookup state.1 as st.1", derivchecks, issapicrule,
+                                              process="lookup state.1 as st.1", no_derivcheck, issapicrule,
                                               role='r']:
      [
      State_11111111( StateChannel, state ), L_PureState( state, st ),
@@ -405,16 +374,6 @@ rule (modulo E) p_0_111111112[color=#405280, process="0", issapicrule,
      [ State_111111112( StateChannel, state ) ] --> [ ]
   */
 
-rule (modulo E) p_0_1111112[color=#ffffff, process="0", issapicrule,
-                            role='Process']:
-   [ State_1111112( StateChannel, state.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_1111112[color=#ffffff, process="0", issapicrule,
-                               role='Process']:
-     [ State_1111112( StateChannel, state ) ] --> [ ]
-  */
-
 rule (modulo E) p_0_12[color=#ffffff, process="!", issapicrule,
                        role='Process']:
    [ State_12( ) ] --> [ !Semistate_121( ) ]
@@ -502,24 +461,18 @@ rule (modulo E) p_1_121111[color=#ffffff, process="!", issapicrule,
      [ State_1211111( StateChannel, state ) ]
   */
 
-rule (modulo E) v_0_1211111[color=#ffffff, process="v()", issapicrule,
+rule (modulo E) v_0_1211111[color=#ffffff, process="v();", issapicrule,
                             role='Process']:
    [ State_1211111( StateChannel.1, state.2 ) ]
   -->
-   [
-   State_12111111( StateChannel.1, state.2 ),
-   State_12111112( StateChannel.1, state.2 )
-   ]
+   [ State_12111111( StateChannel.1, state.2 ) ]
 
   /*
-  rule (modulo AC) v_0_1211111[color=#ffffff, process="v()", issapicrule,
+  rule (modulo AC) v_0_1211111[color=#ffffff, process="v();", issapicrule,
                                role='Process']:
      [ State_1211111( StateChannel, state ) ]
     -->
-     [
-     State_12111111( StateChannel, state ),
-     State_12111112( StateChannel, state )
-     ]
+     [ State_12111111( StateChannel, state ) ]
   */
 
 rule (modulo E) lockstate_0_12111111[color=#658040,
@@ -537,7 +490,7 @@ rule (modulo E) lockstate_0_12111111[color=#658040,
   */
 
 rule (modulo E) lookupstateasst_0_121111111[color=#658040,
-                                            process="lookup state.2 as st.2", derivchecks, issapicrule,
+                                            process="lookup state.2 as st.2", no_derivcheck, issapicrule,
                                             role='v']:
    [
    State_121111111( StateChannel.1, state.2 ), L_PureState( state.2, st.2 ),
@@ -552,7 +505,7 @@ rule (modulo E) lookupstateasst_0_121111111[color=#658040,
   // loop breaker: [1]
   /*
   rule (modulo AC) lookupstateasst_0_121111111[color=#658040,
-                                               process="lookup state.2 as st.2", derivchecks, issapicrule,
+                                               process="lookup state.2 as st.2", no_derivcheck, issapicrule,
                                                role='v']:
      [
      State_121111111( StateChannel, state ), L_PureState( state, st ),
@@ -876,33 +829,35 @@ rule (modulo E) p_0_1211111112[color=#658040, process="0", issapicrule,
      [ State_1211111112( StateChannel, state ) ] --> [ ]
   */
 
-rule (modulo E) p_0_12111112[color=#ffffff, process="0", issapicrule,
-                             role='Process']:
-   [ State_12111112( StateChannel.1, state.2 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_12111112[color=#ffffff, process="0", issapicrule,
-                                role='Process']:
-     [ State_12111112( StateChannel, state ) ] --> [ ]
-  */
-
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 /*
 WARNING: the following wellformedness checks failed!
-
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
 
 Facts occur in the left-hand-side but not in any right-hand-side 
 =================================================================
@@ -914,10 +869,10 @@ Facts occur in the left-hand-side but not in any right-hand-side
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -929,9 +884,9 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-locations/AC_counter_with_attack.spthy
 
   output:          examples/sapic/fast/feature-locations/AC_counter_with_attack.spthy.tmp
-  processing time: 1.61s
+  processing time: 0.61s
   
-  WARNING: 2 wellformedness check failed!
+  WARNING: 1 wellformedness check failed!
            The analysis results might be wrong!
   
   attested_comput_second_step (all-traces): verified (2 steps)

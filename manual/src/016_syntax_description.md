@@ -21,7 +21,7 @@ function symbols and the equalities describing their interaction.  Note that
 our parser is stateful and remembers what functions have been defined. It will
 only parse function applications of defined functions.
 
-~~~~ {.tamarin grammar="grammar/grammar.ebnf" rules="_signature_spec,function,_function_sym,function_pub,function_private,function_destructor,equations,equation"}
+~~~~ {.tamarin grammar="grammar/grammar.ebnf" rules="_signature_spec,function,_function_sym,function_untyped,function_typed,function_attribute,equations,equation"}
 ~~~~
 
 Note that the equations must be convergent and have the
@@ -84,7 +84,7 @@ in a configuration block.
 
     configuration := 'configuration' ':' '"' option (' ' option)* '"'
     option          := '--auto-sources' | ('--stop-on-trace' '=' search_method)
-    search_method := 'DFS' | 'BFS' | 'SEQDFS' | 'NONE'
+    search_method := 'DFS' | 'BFS' | 'SEQDFS' | 'SORRY' | 'NONE'
 
 Restrictions specify restrictions on the set of traces considered, i.e., they filter
 the set of traces of a protocol. The formula of a restriction is available as an

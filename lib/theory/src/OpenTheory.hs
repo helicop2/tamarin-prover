@@ -150,7 +150,7 @@ addAutoSourcesLemma hnd lemmaName (ClosedRuleCache _ raw _ _) items =
     runMaude = (`runReader` hnd)
 
     -- searching for the lemma
-    lemma (LemmaItem (Lemma name _ _ _ _ _ _)) | name == lemmaName = True
+    lemma (LemmaItem (Lemma name _ _ _ _ _ _ _)) | name == lemmaName = True
     lemma _ = False
 
     -- build the lemma
@@ -868,21 +868,13 @@ prettyEitherRule (_, p) = prettyProtoRuleE $ L.get oprRuleE p
 
 -- | Pretty print an open theory.
 prettyOpenTheory :: (HighlightDocument d) => OpenTheory -> d
-prettyOpenTheory thy =
+prettyOpenTheory =
   prettyTheory
-    (prettySignaturePureExcept funsyms)
+    prettySignaturePure
     (const emptyDoc)
     prettyOpenProtoRule
     prettyProof
     prettyTranslationElement
-    thy
-  where
-    -- prettyIntrVariantsSection prettyOpenProtoRule prettyProof
-
-    funsyms = S.fromList $ map fst' $ theoryFunctionTypingInfos thy
-    -- function symbols that are printed by sapic printer already
-    fst' (NoEqUser a,_,_) = NoEqUser a
-    fst' (ACfctUser a, _, _) = ACfctUser a
 
 -- | Pretty print an open theory.
 prettyOpenDiffTheory :: (HighlightDocument d) => OpenDiffTheory -> d
@@ -918,20 +910,24 @@ prettyDiffTheory ::
   d
 prettyDiffTheory ppSig ppCache ppRule ppDiffPrf ppPrf thy =
   vsep $
-    [ kwTheoryHeader $ text $ L.get diffThyName thy,
+    [ kwTheoryName $ text $ L.get diffThyName thy]
+    ++ parMap rdeepseq ppItem (filter isConfigBlock (L.get diffThyItems thy))
+    ++ [kwTheoryBegin,
       lineComment_ "Function signature and definition of the equational theory E",
       ppSig $ L.get diffThySignature thy,
-      if thyT == [] then text "" else vcat $ map prettyTactic thyT,
-      if thyH == [] then text "" else text "heuristic: " <> text (prettyGoalRankings thyH),
+      if null thyT then emptyDoc else vcat $ map prettyTactic thyT,
+      if null thyH then emptyDoc else text "heuristic: " <> text (prettyGoalRankings thyH),
       prettyMacros $ diffTheoryMacros thy,
       ppCache $ L.get diffThyCacheLeft thy,
       ppCache $ L.get diffThyCacheRight thy,
       ppCache $ L.get diffThyDiffCacheLeft thy,
       ppCache $ L.get diffThyDiffCacheRight thy
     ]
-      ++ parMap rdeepseq ppItem (L.get diffThyItems thy)
+      ++ parMap rdeepseq ppItem (filter (not . isConfigBlock) (L.get diffThyItems thy)) 
       ++ [kwEnd]
   where
+    isConfigBlock (DiffConfigBlockItem _) = True
+    isConfigBlock _ = False
     ppItem =
       foldDiffTheoryItem
         prettyDiffRule
@@ -948,5 +944,5 @@ prettyDiffTheory ppSig ppCache ppRule ppDiffPrf ppPrf thy =
 prettyOpenRuleCache :: HighlightDocument d => OpenRuleCache -> d
 prettyOpenRuleCache = vcat . map prettyIntrRuleAC
 
-prettyOpenRuleCacheWithLimit :: HighlightDocument d => OpenRuleCache -> d
-prettyOpenRuleCacheWithLimit = vcat . map prettyIntrRuleACWithLimit
+prettyOpenRuleCacheWithLimitAndNDC :: HighlightDocument d => OpenRuleCache -> d
+prettyOpenRuleCacheWithLimitAndNDC = vcat . map prettyIntrRuleACWithLimitAndNDC

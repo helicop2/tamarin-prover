@@ -1,10 +1,12 @@
-theory SOC begin
+theory SOC
+
+begin
 
 // Function signature and definition of the equational theory E
 
-functions: adec/2, aenc/2, check_rep/2[destructor], fst/1,
-           get_rep/1[destructor], pair/2, pk/1, prog/2, rep/2[private,constructor],
-           report/1, sdec/2, senc/2, snd/1
+functions: adec/2, aenc/2, check_rep/2 [destructor], fst/1,
+           get_rep/1 [destructor], pair/2, pk/1, prog/2,
+           rep/2 [private,constructor], report/1, sdec/2, senc/2, snd/1
 equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
     check_rep(rep(x.1, x.2), x.2) = x.1,
@@ -13,23 +15,9 @@ equations:
     sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
 
-
-
-
-
-
-
 predicate: Report( x, y )<=>¬(fst(y) = 'loc')
-
-
-
-
-
-
 
 lemma secrecy [reuse]:
   all-traces
@@ -78,35 +66,14 @@ next
             ) ▶₀ #t1 )
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 restriction Restr_ReportRule_1:
   "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'loc'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'loc'))"
+  */
 
 rule (modulo E) ReportRule[color=#ffffff, process="new init.1;",
                            issapicrule, role='Process']:
@@ -172,16 +139,14 @@ rule (modulo E) p_1_11[color=#ffffff, process="!", issapicrule,
      [ !Semistate_111( init ) ] --> [ State_111( init ) ]
   */
 
-rule (modulo E) Rinit_0_111[color=#ffffff, process="R(init.1)",
+rule (modulo E) Rinit_0_111[color=#ffffff, process="R(init.1);",
                             issapicrule, role='Process']:
-   [ State_111( init.1 ) ]
-  -->
-   [ State_1111( init.1 ), State_1112( init.1 ) ]
+   [ State_111( init.1 ) ] --> [ State_1111( init.1 ) ]
 
   /*
-  rule (modulo AC) Rinit_0_111[color=#ffffff, process="R(init.1)",
+  rule (modulo AC) Rinit_0_111[color=#ffffff, process="R(init.1);",
                                issapicrule, role='Process']:
-     [ State_111( init ) ] --> [ State_1111( init ), State_1112( init ) ]
+     [ State_111( init ) ] --> [ State_1111( init ) ]
   */
 
 rule (modulo E) inpkV_0_1111[color=#408073, process="in(pkV.1);",
@@ -363,7 +328,7 @@ rule (modulo E) lockstoreP_0_1111111111111[color=#408073,
   */
 
 rule (modulo E) lookupstorePasoldi_0_11111111111111[color=#408073,
-                                                    process="lookup storeP.1 as old_i.1", derivchecks,
+                                                    process="lookup storeP.1 as old_i.1", no_derivcheck,
                                                     issapicrule, role='R']:
    [ State_11111111111111( lock, init.1, pkV.1, shared_k.1, storeP.1 ) ]
   --[ IsIn( storeP.1, old_i.1 ) ]->
@@ -374,7 +339,7 @@ rule (modulo E) lookupstorePasoldi_0_11111111111111[color=#408073,
 
   /*
   rule (modulo AC) lookupstorePasoldi_0_11111111111111[color=#408073,
-                                                       process="lookup storeP.1 as old_i.1", derivchecks,
+                                                       process="lookup storeP.1 as old_i.1", no_derivcheck,
                                                        issapicrule, role='R']:
      [ State_11111111111111( lock, init, pkV, shared_k, storeP ) ]
     --[ IsIn( storeP, old_i ) ]->
@@ -382,7 +347,7 @@ rule (modulo E) lookupstorePasoldi_0_11111111111111[color=#408073,
   */
 
 rule (modulo E) lookupstorePasoldi_1_11111111111111[color=#408073,
-                                                    process="lookup storeP.1 as old_i.1", derivchecks,
+                                                    process="lookup storeP.1 as old_i.1", no_derivcheck,
                                                     issapicrule, role='R']:
    [ State_11111111111111( lock, init.1, pkV.1, shared_k.1, storeP.1 ) ]
   --[ IsNotSet( storeP.1 ) ]->
@@ -390,7 +355,7 @@ rule (modulo E) lookupstorePasoldi_1_11111111111111[color=#408073,
 
   /*
   rule (modulo AC) lookupstorePasoldi_1_11111111111111[color=#408073,
-                                                       process="lookup storeP.1 as old_i.1", derivchecks,
+                                                       process="lookup storeP.1 as old_i.1", no_derivcheck,
                                                        issapicrule, role='R']:
      [ State_11111111111111( lock, init, pkV, shared_k, storeP ) ]
     --[ IsNotSet( storeP ) ]->
@@ -650,27 +615,6 @@ rule (modulo E) p_0_111111111111111111111[color=#408073, process="0",
      [ ]
   */
 
-rule (modulo E) p_0_11111111111111112[color=#408073, process="0",
-                                      issapicrule, role='R']:
-   [
-   State_11111111111111112( lock, cypher.1, init.1, old_i.1, pkV.1,
-                            shared_k.1, storeP.1
-   )
-   ]
-  -->
-   [ ]
-
-  /*
-  rule (modulo AC) p_0_11111111111111112[color=#408073, process="0",
-                                         issapicrule, role='R']:
-     [
-     State_11111111111111112( lock, cypher, init, old_i, pkV, shared_k, storeP
-     )
-     ]
-    -->
-     [ ]
-  */
-
 rule (modulo E) p_0_111111111111112[color=#408073, process="0",
                                     issapicrule, role='R']:
    [ State_111111111111112( lock, init.1, pkV.1, shared_k.1, storeP.1 ) ]
@@ -681,16 +625,6 @@ rule (modulo E) p_0_111111111111112[color=#408073, process="0",
   rule (modulo AC) p_0_111111111111112[color=#408073, process="0",
                                        issapicrule, role='R']:
      [ State_111111111111112( lock, init, pkV, shared_k, storeP ) ] --> [ ]
-  */
-
-rule (modulo E) p_0_1112[color=#ffffff, process="0", issapicrule,
-                         role='Process']:
-   [ State_1112( init.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_1112[color=#ffffff, process="0", issapicrule,
-                            role='Process']:
-     [ State_1112( init ) ] --> [ ]
   */
 
 rule (modulo E) p_0_12[color=#ffffff, process="!", issapicrule,
@@ -713,16 +647,14 @@ rule (modulo E) p_1_12[color=#ffffff, process="!", issapicrule,
      [ !Semistate_121( init ) ] --> [ State_121( init ) ]
   */
 
-rule (modulo E) Vinit_0_121[color=#ffffff, process="V(init.1)",
+rule (modulo E) Vinit_0_121[color=#ffffff, process="V(init.1);",
                             issapicrule, role='Process']:
-   [ State_121( init.1 ) ]
-  -->
-   [ State_1211( init.1 ), State_1212( init.1 ) ]
+   [ State_121( init.1 ) ] --> [ State_1211( init.1 ) ]
 
   /*
-  rule (modulo AC) Vinit_0_121[color=#ffffff, process="V(init.1)",
+  rule (modulo AC) Vinit_0_121[color=#ffffff, process="V(init.1);",
                                issapicrule, role='Process']:
-     [ State_121( init ) ] --> [ State_1211( init ), State_1212( init ) ]
+     [ State_121( init ) ] --> [ State_1211( init ) ]
   */
 
 rule (modulo E) newskV_0_1211[color=#804840, process="new skV.1;",
@@ -1018,7 +950,7 @@ rule (modulo E) lockstoreV_0_12111111111111[color=#804840,
   */
 
 rule (modulo E) lookupstoreVasoldi_0_121111111111111[color=#804840,
-                                                     process="lookup storeV.1 as old_i.2", derivchecks,
+                                                     process="lookup storeV.1 as old_i.2", no_derivcheck,
                                                      issapicrule, role='V']:
    [
    State_121111111111111( init.1, lock.1, skV.1, storeV.1, cypher.2,
@@ -1034,7 +966,7 @@ rule (modulo E) lookupstoreVasoldi_0_121111111111111[color=#804840,
 
   /*
   rule (modulo AC) lookupstoreVasoldi_0_121111111111111[color=#804840,
-                                                        process="lookup storeV.1 as old_i.2", derivchecks,
+                                                        process="lookup storeV.1 as old_i.2", no_derivcheck,
                                                         issapicrule, role='V']:
      [ State_121111111111111( init, lock, skV, storeV, cypher, signed ) ]
     --[ IsIn( storeV, old_i ) ]->
@@ -1044,7 +976,7 @@ rule (modulo E) lookupstoreVasoldi_0_121111111111111[color=#804840,
   */
 
 rule (modulo E) lookupstoreVasoldi_1_121111111111111[color=#804840,
-                                                     process="lookup storeV.1 as old_i.2", derivchecks,
+                                                     process="lookup storeV.1 as old_i.2", no_derivcheck,
                                                      issapicrule, role='V']:
    [
    State_121111111111111( init.1, lock.1, skV.1, storeV.1, cypher.2,
@@ -1060,7 +992,7 @@ rule (modulo E) lookupstoreVasoldi_1_121111111111111[color=#804840,
 
   /*
   rule (modulo AC) lookupstoreVasoldi_1_121111111111111[color=#804840,
-                                                        process="lookup storeV.1 as old_i.2", derivchecks,
+                                                        process="lookup storeV.1 as old_i.2", no_derivcheck,
                                                         issapicrule, role='V']:
      [ State_121111111111111( init, lock, skV, storeV, cypher, signed ) ]
     --[ IsNotSet( storeV ) ]->
@@ -1528,28 +1460,6 @@ rule (modulo E) p_0_1211111111111111111112[color=#804840, process="0",
      [ ]
   */
 
-rule (modulo E) p_0_121111111111111111112[color=#804840, process="0",
-                                          issapicrule, role='V']:
-   [
-   State_121111111111111111112( cypher2.1, init.1, lock.1, skV.1, storeV.1,
-                                cypher.2, ip.2, old_i.2, signed.2
-   )
-   ]
-  -->
-   [ ]
-
-  /*
-  rule (modulo AC) p_0_121111111111111111112[color=#804840, process="0",
-                                             issapicrule, role='V']:
-     [
-     State_121111111111111111112( cypher2, init, lock, skV, storeV, cypher,
-                                  ip, old_i, signed
-     )
-     ]
-    -->
-     [ ]
-  */
-
 rule (modulo E) p_0_1211111111111112[color=#804840, process="0",
                                      issapicrule, role='V']:
    [
@@ -1578,16 +1488,6 @@ rule (modulo E) p_0_121111112[color=#804840, process="0", issapicrule,
      [ State_121111112( init, skV, cypher, signed ) ] --> [ ]
   */
 
-rule (modulo E) p_0_1212[color=#ffffff, process="0", issapicrule,
-                         role='Process']:
-   [ State_1212( init.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_1212[color=#ffffff, process="0", issapicrule,
-                            role='Process']:
-     [ State_1212( init ) ] --> [ ]
-  */
-
 restriction set_in:
   "∀ x y #t3.
     (IsIn( x, y ) @ #t3) ⇒
@@ -1596,22 +1496,53 @@ restriction set_in:
       (∀ #t1 yp.
         (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x y #t3.
+    (IsIn( x, y ) @ #t3) ⇒
+    (∃ #t2.
+      ((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ∧
+      (∀ #t1 yp.
+        (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
+  */
+
 restriction set_notin:
   "∀ x #t3.
     (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #t3.
+    (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
+  */
+
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 restriction locking_0:
   "∀ p pp l x lp #t1 #t3.
@@ -1629,6 +1560,24 @@ restriction locking_0:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_0( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_0( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_1:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -1645,26 +1594,32 @@ restriction locking_1:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_1( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
-
-Facts occur in the left-hand-side but not in any right-hand-side 
-=================================================================
-
-  1. in rule "p_0_11111111111111112":  factName `State_11111111111111112' arity: 7 multiplicity: Linear. Perhaps you want to use the fact in rule "incypher_0_111111111111111":  factName `State_1111111111111111' arity: 7 multiplicity: Linear
-  
-  2. in rule "p_0_121111111111111111112":  factName `State_121111111111111111112' arity: 9 multiplicity: Linear. Perhaps you want to use the fact in rule "incypher_0_1211111111111111111":  factName `State_12111111111111111111' arity: 9 multiplicity: Linear
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -1676,10 +1631,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-locations/SOC.spthy
 
   output:          examples/sapic/fast/feature-locations/SOC.spthy.tmp
-  processing time: 5.83s
-  
-  WARNING: 2 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 3.77s
   
   secrecy (all-traces): verified (2 steps)
   Reach (exists-trace): falsified - no trace found (4 steps)

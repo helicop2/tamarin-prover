@@ -54,16 +54,27 @@ module Term.Term (
     , Privacy(..)
     , Constructability(..)
     , ACstate(..)
+    , NDCstate(..)
     , FctAttr(..)
-    , UserDefineSym(..)
+    , UserDefinedSym(..)
     , ACfctSym
     , NoEqSym
+
+    , hasNDC
+    , hasNDCdiff
+    , isNDCFunSym
+    , isNDCDiffFunSym
+    , joinNDC
+    , setNDC
+    , addNDC
+    , setNDCNoEqSym
+    , setNDCACfctSym
 
     -- ** Signatures
     , FunSig
     , NoEqFunSig
     , ACfctFunSig
-    , UserDefineSig
+    , UserDefinedSig
 
     -- ** concrete symbols strings
     , diffSymString
@@ -87,10 +98,16 @@ module Term.Term (
     , diffSym
     , expSym
     , pmultSym
+    , invSym
     , natOneSym
     , oneSym
     , zeroSym
     , dhNeutralSym
+    , fstSym
+    , sndSym
+    , pairSym
+    , fstDestSym
+    , sndDestSym
 
     -- ** concrete signatures
     , dhFunSig
@@ -201,11 +218,11 @@ isUnion _                       = False
 
 -- | 'True' iff the term is a nullary, public function.
 isNullaryPublicFunction :: Term a -> Bool
-isNullaryPublicFunction (viewTerm -> FApp (NoEq (_, (0, Public,_))) _) = True
+isNullaryPublicFunction (viewTerm -> FApp (NoEq (_, (0, Public,_,_))) _) = True
 isNullaryPublicFunction _                                            = False
 
 isPrivateFunction :: Term a -> Bool
-isPrivateFunction (viewTerm -> FApp (NoEq (_, (_,Private,_))) _) = True
+isPrivateFunction (viewTerm -> FApp (NoEq (_, (_,Private,_,_))) _) = True
 isPrivateFunction _                                            = False
 
 -- | 'True' iff the term is an AC-operator.
@@ -223,7 +240,7 @@ getSide dt (FAPP (NoEq o) [t1,t2]) = case dt of
     DiffLeft  | o == diffSym -> getSide dt t1
     DiffRight | o == diffSym -> getSide dt t2
     DiffBoth  | o == diffSym -> FAPP (NoEq o) [(getSide dt t1),(getSide dt t2)]
-    DiffNone  | o == diffSym -> error $ "getSide: illegal use of diff"
+    DiffNone  | o == diffSym -> error "getSide: illegal use of diff"
     _                        -> FAPP (NoEq o) [(getSide dt t1),(getSide dt t2)]
 getSide dt (FAPP sym ts) = FAPP sym (map (getSide dt) ts)
 
@@ -249,6 +266,10 @@ allProtSubterms _                                     = []
 
 -- | Is term @inner@ in term @outer@ and not below a reducible function symbol?
 -- This is used for the Subterm relation
+-- INLINABLE so the call site (the subterm store, at the concrete 'LNTerm'
+-- type in another package) can specialise away the @Eq@/@Ord FunSym@
+-- dictionaries and the per-level @any@ closure.
+{-# INLINABLE elemNotBelowReducible #-}
 elemNotBelowReducible :: Eq a => FunSig -> Term a -> Term a -> Bool
 elemNotBelowReducible _ inner outer
                       | inner == outer = True
@@ -265,8 +286,13 @@ elemNotBelowReducible _ _ _ = False
 showFunSymName :: FunSym -> String
 showFunSymName (NoEq (bs, _))       = BC.unpack bs
 showFunSymName (AC (ACfct (bs, _))) = BC.unpack bs
-showFunSymName (AC op)              = show op
-showFunSymName (C op )              = show op
+showFunSymName (AC op)              = BC.unpack $ case op of
+    Union   -> munSymString
+    Mult    -> multSymString
+    Xor     -> xorSymString
+    NatPlus -> natPlusSymString
+showFunSymName (C op )              = BC.unpack $ case op of
+    EMap    -> emapSymString
 showFunSymName List                 = "List"
 
 -- | Pretty print a term.
@@ -275,8 +301,8 @@ prettyTerm ppLit = ppTerm
   where
     ppTerm t = case viewTerm t of
         Lit l                                     -> ppLit l
-        FApp (AC (ACfct (f, _))) []                    -> text (BC.unpack f)
-        FApp (AC (ACfct (f, _))) ts                    -> ppFun f ts
+        FApp (AC (ACfct (f, _))) []               -> text (BC.unpack f)
+        FApp (AC (ACfct (f, _))) ts               -> ppTerms (" " ++ BC.unpack f ++ " ") 1 "(" ")" ts
         FApp (AC Mult)     ts                     -> ppTerms "*" 1 "(" ")" ts
         FApp (AC Xor)      ts                     -> ppTerms "⊕" 1 "(" ")" ts
         FApp (AC Union)    ts                     -> ppTerms "++" 1 "(" ")" ts

@@ -18,8 +18,9 @@ module Term.Term.FunctionSymbols (
     , Privacy(..)
     , Constructability(..)
     , ACstate(..)
+    , NDCstate(..)
     , FctAttr(..)
-    , UserDefineSym(..)
+    , UserDefinedSym(..)
     , ACfctSym
     , NoEqSym
 
@@ -27,7 +28,18 @@ module Term.Term.FunctionSymbols (
     , FunSig
     , NoEqFunSig
     , ACfctFunSig
-    , UserDefineSig
+    , UserDefinedSig
+
+    -- ** NDC property
+    , hasNDC
+    , hasNDCdiff
+    , isNDCFunSym
+    , isNDCDiffFunSym
+    , joinNDC
+    , setNDC
+    , addNDC
+    , setNDCNoEqSym
+    , setNDCACfctSym
 
     -- ** concrete symbols strings
     , diffSymString
@@ -108,14 +120,19 @@ data Constructability = Constructor | Destructor
 data ACstate = IsAC | NotAC
   deriving (Eq, Ord, Typeable, Data, Show, Generic, NFData, Binary)
 
-data FctAttr = Privacy Privacy | Constructability Constructability | ACstate ACstate
+-- | A function symbol can have the NDC property for the trace intruder rules (IsNDC),
+-- for the diff-mode intruder rules (IsNDCDiff), for both (IsNDCBoth), or for neither (NotNDC).
+data NDCstate = IsNDC | NotNDC | IsNDCDiff | IsNDCBoth
+  deriving (Eq, Ord, Typeable, Data, Show, Generic, NFData, Binary)
+
+data FctAttr = Privacy Privacy | Constructability Constructability | ACstate ACstate | NDCstate NDCstate
   deriving (Eq, Ord, Typeable, Data, Show, Generic, NFData, Binary)
 
 -- | NoEq function symbols (with respect to the background theory).
-type NoEqSym = (ByteString, (Int, Privacy,Constructability)) -- ^ operator name, arity, private, destructor
+type NoEqSym = (ByteString, (Int, Privacy, Constructability, NDCstate)) -- ^ operator name, arity, private, destructor, NDC property
 
--- | AC function symbols (with respect to the background theory).
-type ACfctSym = (ByteString, (Privacy,Constructability)) -- ^ operator name, private, destructor
+-- | User-defined AC function symbols.
+type ACfctSym = (ByteString, (Privacy, Constructability, NDCstate)) -- ^ operator name, private, destructor, NDC property
 
 -- | AC function symbols.
 data ACSym = Union | Mult | Xor | NatPlus | ACfct ACfctSym 
@@ -125,8 +142,8 @@ data ACSym = Union | Mult | Xor | NatPlus | ACfct ACfctSym
 data CSym = EMap
   deriving (Eq, Ord, Typeable, Data, Show, Generic, NFData, Binary)
 
--- | User define function symbol
-data UserDefineSym = NoEqUser NoEqSym | ACfctUser ACfctSym
+-- | User defined function symbols
+data UserDefinedSym = NoEqUser NoEqSym | ACfctUser ACfctSym
   deriving (Eq, Ord, Typeable, Data, Show, Generic, NFData, Binary)
 
 -- | Function symbols
@@ -142,9 +159,60 @@ type FunSig = Set FunSym
 -- | NoEq function signatures.
 type NoEqFunSig = Set NoEqSym
 
+-- | User-defined AC function signatures.
 type ACfctFunSig = Set ACfctSym
 
-type UserDefineSig = Set UserDefineSym
+-- | User-defined function signatures.
+type UserDefinedSig = Set UserDefinedSym
+
+-- | Does the state include the NDC property for the trace intruder rules?
+hasNDC :: NDCstate -> Bool
+hasNDC IsNDC     = True
+hasNDC IsNDCBoth = True
+hasNDC _         = False
+
+-- | Does the state include the NDC property for the diff-mode intruder rules?
+hasNDCdiff :: NDCstate -> Bool
+hasNDCdiff IsNDCDiff = True
+hasNDCdiff IsNDCBoth = True
+hasNDCdiff _         = False
+
+-- | Combine two NDC states, keeping the properties asserted by either one.
+joinNDC :: NDCstate -> NDCstate -> NDCstate
+joinNDC s1 s2 = case (hasNDC s1 || hasNDC s2, hasNDCdiff s1 || hasNDCdiff s2) of
+    (True, True)   -> IsNDCBoth
+    (True, False)  -> IsNDC
+    (False, True)  -> IsNDCDiff
+    (False, False) -> NotNDC
+
+isNDCFunSym :: FunSym -> Bool
+isNDCFunSym (NoEq (_, (_, _, _, ndc))) = hasNDC ndc
+isNDCFunSym (AC (ACfct (_, (_, _, ndc)))) = hasNDC ndc
+isNDCFunSym _ = False
+
+isNDCDiffFunSym :: FunSym -> Bool
+isNDCDiffFunSym (NoEq (_, (_, _, _, ndc))) = hasNDCdiff ndc
+isNDCDiffFunSym (AC (ACfct (_, (_, _, ndc)))) = hasNDCdiff ndc
+isNDCDiffFunSym _ = False
+
+setNDC :: NDCstate -> FunSym -> FunSym
+setNDC ndcState (NoEq (name, (arity, privacy, constructability, _))) = NoEq (name, (arity, privacy, constructability, ndcState))
+setNDC ndcState (AC (ACfct (name, (privacy, constructability, _))))  = AC (ACfct (name, (privacy, constructability, ndcState)))
+setNDC _ fctSym                                                      = fctSym
+
+addNDC :: NDCstate -> FunSym -> FunSym
+addNDC ndcState (NoEq (name, (arity, privacy, constructability, ndcStateOld))) =
+  NoEq (name, (arity, privacy, constructability, joinNDC ndcState ndcStateOld))
+addNDC ndcState (AC (ACfct (name, (privacy, constructability, ndcStateOld))))  =
+  AC (ACfct (name, (privacy, constructability, joinNDC ndcState ndcStateOld)))
+addNDC _ fctSym                                                                =
+  fctSym
+
+setNDCNoEqSym :: NDCstate -> NoEqSym -> NoEqSym
+setNDCNoEqSym ndcState (name, (arity, privacy, constructability, _)) = (name, (arity, privacy, constructability, ndcState))
+
+setNDCACfctSym :: NDCstate -> ACfctSym -> ACfctSym
+setNDCACfctSym ndcState (name, (privacy, constructability, _)) = (name, (privacy, constructability, ndcState))
 
 ----------------------------------------------------------------------
 -- Fixed function symbols
@@ -176,30 +244,30 @@ pmultSymString = "pmult"
 
 pairSym, diffSym, expSym, invSym, oneSym, dhNeutralSym, fstSym, sndSym, pmultSym, zeroSym, natOneSym :: NoEqSym
 -- | Pairing.
-pairSym  = ("pair",(2,Public,Constructor))
+pairSym  = ("pair",(2,Public,Constructor,NotNDC))
 -- | Diff.
-diffSym  = (diffSymString,(2,Private,Constructor))
+diffSym  = (diffSymString,(2,Private,Constructor,NotNDC))
 -- | Exponentiation.
-expSym   = (expSymString,(2,Public,Constructor))
+expSym   = (expSymString,(2,Public,Constructor,NotNDC))
 -- | The inverse in the groups of exponents.
-invSym   = (invSymString,(1,Public,Constructor))
+invSym   = (invSymString,(1,Public,Constructor,NotNDC))
 -- | The one in the group of exponents.
-oneSym   = (oneSymString,(0,Public,Constructor))
+oneSym   = (oneSymString,(0,Public,Constructor,NotNDC))
 -- | The groupd identity
-dhNeutralSym = (dhNeutralSymString,(0,Public, Constructor))
+dhNeutralSym = (dhNeutralSymString,(0,Public, Constructor,NotNDC))
 -- | Projection of first component of pair.
-fstSym   = (fstSymString,(1,Public,Constructor))
+fstSym   = (fstSymString,(1,Public,Constructor,NotNDC))
 -- | Projection of second component of pair.
-sndSym   = (sndSymString,(1,Public,Constructor))
+sndSym   = (sndSymString,(1,Public,Constructor,NotNDC))
 -- | Multiplication of points (in G1) on elliptic curve by scalars.
-pmultSym = (pmultSymString,(2,Public,Constructor))
+pmultSym = (pmultSymString,(2,Public,Constructor,NotNDC))
 -- | The zero for XOR.
-zeroSym  = (zeroSymString,(0,Public,Constructor))
+zeroSym  = (zeroSymString,(0,Public,Constructor,NotNDC))
 -- | One for natural numbers.
-natOneSym = (natOneSymString, (0,Public,Constructor))
+natOneSym = (natOneSymString, (0,Public,Constructor,NotNDC))
 
 mkDestSym :: NoEqSym -> NoEqSym
-mkDestSym (name,(k,p,_)) = (name,(k,p, Destructor))
+mkDestSym (name,(k,p,_,n)) = (name,(k,p, Destructor,n))
 
 fstDestSym, sndDestSym :: NoEqSym
 -- | Projection of first component of pair.

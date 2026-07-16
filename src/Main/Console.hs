@@ -74,7 +74,7 @@ import Text.PrettyPrint.Class qualified as PP
 import Paths_tamarin_prover (version)
 
 import Language.Haskell.TH
-import Development.GitRev
+import GitHash
 
 ------------------------------------------------------------------------------
 -- Maude version functions - previously in Environment.hs
@@ -173,7 +173,7 @@ ensureMaude as = do
 
     --  Maude versions prior to 2.7.1 are no longer supported,
     --  because the 'get variants' command is incompatible.
-    supportedVersions = ["2.7.1", "3.0", "3.1", "3.2.1", "3.2.2", "3.3", "3.3.1", "3.4", "3.5"]
+    supportedVersions = ["2.7.1", "3.0", "3.1", "3.2.1", "3.2.2", "3.3", "3.3.1", "3.4", "3.5", "3.5.1"]
 
     errMsg' = errMsg $ "'" ++ maude ++ "' executable not found / does not work"
 
@@ -198,15 +198,22 @@ ensureMaudeAndGetVersion as = do
 
 -- | Git Version
 gitVersion :: String
-gitVersion = concat
-  [ "Git revision: "
-  , $(gitHash)
-  , if $(gitDirty) then
-      " (with uncommited changes)"
-    else ""
-  , ", branch: "
-  , $(gitBranch)
-  ]
+-- We go through 'either' rather than matching the 'Either' directly: the
+-- compile-time splice resolves to a concrete 'Left'/'Right' in any given
+-- build, so a literal @case@ here trips -Woverlapping-patterns on the unused
+-- branch. The 'Left' case handles builds outside a git checkout (e.g. from a
+-- source tarball), falling back to "UNKNOWN" as the old gitrev code did.
+gitVersion = either (const "Git revision: UNKNOWN") fmtGitInfo $$tGitInfoCwdTry
+  where
+    fmtGitInfo gi = concat
+      [ "Git revision: "
+      , giHash gi
+      , if giDirty gi then
+          " (with uncommited changes)"
+        else ""
+      , ", branch: "
+      , giBranch gi
+      ]
 
 -- | Compile Time
 compileTime :: String
@@ -338,7 +345,7 @@ helpAndExit tmode mayMsg = do
   -- output example info
   putStrLn $ unlines
     [ separator
-    , "To show help for differents commands, type tamarin-prover [Command] --help."
+    , "To show help for different commands, type tamarin-prover [Command] --help."
     , separator
     , "See 'https://github.com/tamarin-prover/tamarin-prover/blob/master/README.md'"
     , "for usage instructions and pointers to examples."

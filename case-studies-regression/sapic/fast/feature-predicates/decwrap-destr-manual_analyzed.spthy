@@ -1,4 +1,6 @@
-theory DecWrapDestr begin
+theory DecWrapDestr
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -9,17 +11,16 @@ equations:
     sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
-
-
-
-
 
 restriction True_is_true:
   "∀ x #i. (IsTrue( x ) @ #i) ⇒ (x = true)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #i. (IsTrue( x ) @ #i) ⇒ (x = true)"
+  */
 
 lemma can_create_key:
   exists-trace "∃ #t h k. NewKey( h, k ) @ #t"
@@ -523,20 +524,6 @@ guarded formula characterizing all counter-examples:
 simplify
 by contradiction /* from formulas */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 rule (modulo E) Init[color=#ffffff, process="!", issapicrule,
                      role='Process']:
    [ ] --[ Init( ) ]-> [ State_( ) ]
@@ -730,7 +717,7 @@ rule (modulo E) inhc_0_112[color=#ffffff, process="in(<h.3, c.1>);",
   */
 
 rule (modulo E) lookupatthasa_0_1121[color=#ffffff,
-                                     process="lookup <'att', h.3> as a.1", derivchecks, issapicrule,
+                                     process="lookup <'att', h.3> as a.1", no_derivcheck, issapicrule,
                                      role='Process']:
    [ State_1121( c.1, h.3 ) ]
   --[ IsIn( <'att', h.3>, a.1 ) ]->
@@ -738,7 +725,7 @@ rule (modulo E) lookupatthasa_0_1121[color=#ffffff,
 
   /*
   rule (modulo AC) lookupatthasa_0_1121[color=#ffffff,
-                                        process="lookup <'att', h.3> as a.1", derivchecks, issapicrule,
+                                        process="lookup <'att', h.3> as a.1", no_derivcheck, issapicrule,
                                         role='Process']:
      [ State_1121( c, h ) ]
     --[ IsIn( <'att', h>, a ) ]->
@@ -746,7 +733,7 @@ rule (modulo E) lookupatthasa_0_1121[color=#ffffff,
   */
 
 rule (modulo E) lookupatthasa_1_1121[color=#ffffff,
-                                     process="lookup <'att', h.3> as a.1", derivchecks, issapicrule,
+                                     process="lookup <'att', h.3> as a.1", no_derivcheck, issapicrule,
                                      role='Process']:
    [ State_1121( c.1, h.3 ) ]
   --[ IsNotSet( <'att', h.3> ) ]->
@@ -754,7 +741,7 @@ rule (modulo E) lookupatthasa_1_1121[color=#ffffff,
 
   /*
   rule (modulo AC) lookupatthasa_1_1121[color=#ffffff,
-                                        process="lookup <'att', h.3> as a.1", derivchecks, issapicrule,
+                                        process="lookup <'att', h.3> as a.1", no_derivcheck, issapicrule,
                                         role='Process']:
      [ State_1121( c, h ) ]
     --[ IsNotSet( <'att', h> ) ]->
@@ -790,7 +777,7 @@ rule (modulo E) ifadec_1_11211[color=#ffffff, process="if a.1='dec'",
   */
 
 rule (modulo E) lookupkeyhask_0_112111[color=#ffffff,
-                                       process="lookup <'key', h.3> as k.2", derivchecks, issapicrule,
+                                       process="lookup <'key', h.3> as k.2", no_derivcheck, issapicrule,
                                        role='Process']:
    [ State_112111( a.1, c.1, h.3 ) ]
   --[ IsIn( <'key', h.3>, k.2 ) ]->
@@ -798,7 +785,7 @@ rule (modulo E) lookupkeyhask_0_112111[color=#ffffff,
 
   /*
   rule (modulo AC) lookupkeyhask_0_112111[color=#ffffff,
-                                          process="lookup <'key', h.3> as k.2", derivchecks, issapicrule,
+                                          process="lookup <'key', h.3> as k.2", no_derivcheck, issapicrule,
                                           role='Process']:
      [ State_112111( a, c, h ) ]
     --[ IsIn( <'key', h>, k ) ]->
@@ -806,7 +793,7 @@ rule (modulo E) lookupkeyhask_0_112111[color=#ffffff,
   */
 
 rule (modulo E) lookupkeyhask_1_112111[color=#ffffff,
-                                       process="lookup <'key', h.3> as k.2", derivchecks, issapicrule,
+                                       process="lookup <'key', h.3> as k.2", no_derivcheck, issapicrule,
                                        role='Process']:
    [ State_112111( a.1, c.1, h.3 ) ]
   --[ IsNotSet( <'key', h.3> ) ]->
@@ -814,7 +801,7 @@ rule (modulo E) lookupkeyhask_1_112111[color=#ffffff,
 
   /*
   rule (modulo AC) lookupkeyhask_1_112111[color=#ffffff,
-                                          process="lookup <'key', h.3> as k.2", derivchecks, issapicrule,
+                                          process="lookup <'key', h.3> as k.2", no_derivcheck, issapicrule,
                                           role='Process']:
      [ State_112111( a, c, h ) ]
     --[ IsNotSet( <'key', h> ) ]->
@@ -942,7 +929,7 @@ rule (modulo E) inhh_0_12[color=#ffffff, process="in(<h1.1, h2.1>);",
   */
 
 rule (modulo E) lookupatthasa_0_121[color=#ffffff,
-                                    process="lookup <'att', h1.1> as a1.1", derivchecks, issapicrule,
+                                    process="lookup <'att', h1.1> as a1.1", no_derivcheck, issapicrule,
                                     role='Process']:
    [ State_121( h1.1, h2.1 ) ]
   --[ IsIn( <'att', h1.1>, a1.1 ) ]->
@@ -950,7 +937,7 @@ rule (modulo E) lookupatthasa_0_121[color=#ffffff,
 
   /*
   rule (modulo AC) lookupatthasa_0_121[color=#ffffff,
-                                       process="lookup <'att', h1.1> as a1.1", derivchecks, issapicrule,
+                                       process="lookup <'att', h1.1> as a1.1", no_derivcheck, issapicrule,
                                        role='Process']:
      [ State_121( h1, h2 ) ]
     --[ IsIn( <'att', h1>, a1 ) ]->
@@ -958,7 +945,7 @@ rule (modulo E) lookupatthasa_0_121[color=#ffffff,
   */
 
 rule (modulo E) lookupatthasa_1_121[color=#ffffff,
-                                    process="lookup <'att', h1.1> as a1.1", derivchecks, issapicrule,
+                                    process="lookup <'att', h1.1> as a1.1", no_derivcheck, issapicrule,
                                     role='Process']:
    [ State_121( h1.1, h2.1 ) ]
   --[ IsNotSet( <'att', h1.1> ) ]->
@@ -966,7 +953,7 @@ rule (modulo E) lookupatthasa_1_121[color=#ffffff,
 
   /*
   rule (modulo AC) lookupatthasa_1_121[color=#ffffff,
-                                       process="lookup <'att', h1.1> as a1.1", derivchecks, issapicrule,
+                                       process="lookup <'att', h1.1> as a1.1", no_derivcheck, issapicrule,
                                        role='Process']:
      [ State_121( h1, h2 ) ]
     --[ IsNotSet( <'att', h1> ) ]->
@@ -1002,7 +989,7 @@ rule (modulo E) ifawrap_1_1211[color=#ffffff, process="if a1.1='wrap'",
   */
 
 rule (modulo E) lookupkeyhask_0_12111[color=#ffffff,
-                                      process="lookup <'key', h1.1> as k1.1", derivchecks, issapicrule,
+                                      process="lookup <'key', h1.1> as k1.1", no_derivcheck, issapicrule,
                                       role='Process']:
    [ State_12111( a1.1, h1.1, h2.1 ) ]
   --[ IsIn( <'key', h1.1>, k1.1 ) ]->
@@ -1010,7 +997,7 @@ rule (modulo E) lookupkeyhask_0_12111[color=#ffffff,
 
   /*
   rule (modulo AC) lookupkeyhask_0_12111[color=#ffffff,
-                                         process="lookup <'key', h1.1> as k1.1", derivchecks, issapicrule,
+                                         process="lookup <'key', h1.1> as k1.1", no_derivcheck, issapicrule,
                                          role='Process']:
      [ State_12111( a1, h1, h2 ) ]
     --[ IsIn( <'key', h1>, k1 ) ]->
@@ -1018,7 +1005,7 @@ rule (modulo E) lookupkeyhask_0_12111[color=#ffffff,
   */
 
 rule (modulo E) lookupkeyhask_1_12111[color=#ffffff,
-                                      process="lookup <'key', h1.1> as k1.1", derivchecks, issapicrule,
+                                      process="lookup <'key', h1.1> as k1.1", no_derivcheck, issapicrule,
                                       role='Process']:
    [ State_12111( a1.1, h1.1, h2.1 ) ]
   --[ IsNotSet( <'key', h1.1> ) ]->
@@ -1026,7 +1013,7 @@ rule (modulo E) lookupkeyhask_1_12111[color=#ffffff,
 
   /*
   rule (modulo AC) lookupkeyhask_1_12111[color=#ffffff,
-                                         process="lookup <'key', h1.1> as k1.1", derivchecks, issapicrule,
+                                         process="lookup <'key', h1.1> as k1.1", no_derivcheck, issapicrule,
                                          role='Process']:
      [ State_12111( a1, h1, h2 ) ]
     --[ IsNotSet( <'key', h1> ) ]->
@@ -1034,7 +1021,7 @@ rule (modulo E) lookupkeyhask_1_12111[color=#ffffff,
   */
 
 rule (modulo E) lookupkeyhask_0_121111[color=#ffffff,
-                                       process="lookup <'key', h2.1> as k2.1", derivchecks, issapicrule,
+                                       process="lookup <'key', h2.1> as k2.1", no_derivcheck, issapicrule,
                                        role='Process']:
    [ State_121111( a1.1, h1.1, h2.1, k1.1 ) ]
   --[ IsIn( <'key', h2.1>, k2.1 ) ]->
@@ -1042,7 +1029,7 @@ rule (modulo E) lookupkeyhask_0_121111[color=#ffffff,
 
   /*
   rule (modulo AC) lookupkeyhask_0_121111[color=#ffffff,
-                                          process="lookup <'key', h2.1> as k2.1", derivchecks, issapicrule,
+                                          process="lookup <'key', h2.1> as k2.1", no_derivcheck, issapicrule,
                                           role='Process']:
      [ State_121111( a1, h1, h2, k1 ) ]
     --[ IsIn( <'key', h2>, k2 ) ]->
@@ -1050,7 +1037,7 @@ rule (modulo E) lookupkeyhask_0_121111[color=#ffffff,
   */
 
 rule (modulo E) lookupkeyhask_1_121111[color=#ffffff,
-                                       process="lookup <'key', h2.1> as k2.1", derivchecks, issapicrule,
+                                       process="lookup <'key', h2.1> as k2.1", no_derivcheck, issapicrule,
                                        role='Process']:
    [ State_121111( a1.1, h1.1, h2.1, k1.1 ) ]
   --[ IsNotSet( <'key', h2.1> ) ]->
@@ -1058,7 +1045,7 @@ rule (modulo E) lookupkeyhask_1_121111[color=#ffffff,
 
   /*
   rule (modulo AC) lookupkeyhask_1_121111[color=#ffffff,
-                                          process="lookup <'key', h2.1> as k2.1", derivchecks, issapicrule,
+                                          process="lookup <'key', h2.1> as k2.1", no_derivcheck, issapicrule,
                                           role='Process']:
      [ State_121111( a1, h1, h2, k1 ) ]
     --[ IsNotSet( <'key', h2> ) ]->
@@ -1153,22 +1140,53 @@ restriction set_in:
       (∀ #t1 yp.
         (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x y #t3.
+    (IsIn( x, y ) @ #t3) ⇒
+    (∃ #t2.
+      ((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ∧
+      (∀ #t1 yp.
+        (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
+  */
+
 restriction set_notin:
   "∀ x #t3.
     (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #t3.
+    (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
+  */
+
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 restriction locking_0:
   "∀ p pp l x lp #t1 #t3.
@@ -1186,19 +1204,32 @@ restriction locking_0:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_0( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_0( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -1210,10 +1241,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-predicates/decwrap-destr-manual.spthy
 
   output:          examples/sapic/fast/feature-predicates/decwrap-destr-manual.spthy.tmp
-  processing time: 1.13s
-  
-  WARNING: 1 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 0.42s
   
   can_create_key (exists-trace): verified (3 steps)
   can_obtain_wrapping (exists-trace): verified (11 steps)
