@@ -1,11 +1,13 @@
-theory OTP begin
+theory OTP
+
+begin
 
 // Function signature and definition of the equational theory E
 
 functions: adec/2, aenc/2, cde/1, chall/1, chall2/1,
-           check_rep/2[destructor], dcde/1, dchall/1, dchall2/1, dscode/1,
-           dshared/1, dsko/1, fst/1, get_rep/1[destructor], h/1, hash/2, list/2,
-           pair/2, pk/1, prog/2, rep/2[private,constructor], report/1, scode/1,
+           check_rep/2 [destructor], dcde/1, dchall/1, dchall2/1, dscode/1,
+           dshared/1, dsko/1, fst/1, get_rep/1 [destructor], h/1, hash/2, list/2,
+           pair/2, pk/1, prog/2, rep/2 [private,constructor], report/1, scode/1,
            sdec/2, senc/2, shared/1, sko/1, snd/1
 equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
@@ -19,25 +21,9 @@ equations:
     sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: S
 
-
-
-
-
-
-
 predicate: Report( x, y )<=>¬(y = 'loc')
-
-
-
-
-
-
-
-
 
 lemma reachV:
   exists-trace "∃ pka k #t1. SessionV( pka, k ) @ #t1"
@@ -1179,65 +1165,14 @@ next
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 restriction Restr_ReportRule_1:
   "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'loc'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW. (Restr_ReportRule_1( x ) @ #NOW) ⇒ (¬(x = 'loc'))"
+  */
 
 rule (modulo E) ReportRule[color=#ffffff, process="new skV.1;",
                            issapicrule, role='Process']:
@@ -1421,25 +1356,19 @@ rule (modulo E) p_0_1111111111[color=#ffffff, process="|", issapicrule,
   */
 
 rule (modulo E) userpcchannelcuchannelpw_0_11111111111[color=#ffffff,
-                                                       process="user(pc.1:channel, cu.1:channel, pw.1)",
+                                                       process="user(pc.1:channel, cu.1:channel, pw.1);",
                                                        issapicrule, role='Process']:
    [ State_11111111111( cu.1, pc.1, pw.1, skV.1 ) ]
   -->
-   [
-   State_111111111111( cu.1, pc.1, pw.1, skV.1 ),
-   State_111111111112( cu.1, pc.1, pw.1, skV.1 )
-   ]
+   [ State_111111111111( cu.1, pc.1, pw.1, skV.1 ) ]
 
   /*
   rule (modulo AC) userpcchannelcuchannelpw_0_11111111111[color=#ffffff,
-                                                          process="user(pc.1:channel, cu.1:channel, pw.1)",
+                                                          process="user(pc.1:channel, cu.1:channel, pw.1);",
                                                           issapicrule, role='Process']:
      [ State_11111111111( cu, pc, pw, skV ) ]
     -->
-     [
-     State_111111111111( cu, pc, pw, skV ),
-     State_111111111112( cu, pc, pw, skV )
-     ]
+     [ State_111111111111( cu, pc, pw, skV ) ]
   */
 
 rule (modulo E) inpcchannelcode_0_111111111111[color=#504080,
@@ -1619,16 +1548,6 @@ rule (modulo E) p_0_1111111111111111111[color=#504080, process="0",
      [ State_1111111111111111111( code, cu, fr, pc, pw, skV ) ] --> [ ]
   */
 
-rule (modulo E) p_0_111111111112[color=#ffffff, process="0", issapicrule,
-                                 role='Process']:
-   [ State_111111111112( cu.1, pc.1, pw.1, skV.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_111111111112[color=#ffffff, process="0",
-                                    issapicrule, role='Process']:
-     [ State_111111111112( cu, pc, pw, skV ) ] --> [ ]
-  */
-
 rule (modulo E) p_0_11111111112[color=#ffffff, process="!", issapicrule,
                                 role='Process']:
    [ State_11111111112( cu.1, pc.1, pw.1, skV.1 ) ]
@@ -1678,25 +1597,19 @@ rule (modulo E) p_0_111111111121[color=#ffffff, process="|", issapicrule,
   */
 
 rule (modulo E) enclavepkskVcuchannelpw_0_1111111111211[color=#ffffff,
-                                                        process="enclave(pk(skV.1), cu.1:channel, pw.1)",
+                                                        process="enclave(pk(skV.1), cu.1:channel, pw.1);",
                                                         issapicrule, role='Process']:
    [ State_1111111111211( cu.1, pc.1, pw.1, skV.1 ) ]
   -->
-   [
-   State_11111111112111( cu.1, pc.1, pw.1, skV.1 ),
-   State_11111111112112( cu.1, pc.1, pw.1, skV.1 )
-   ]
+   [ State_11111111112111( cu.1, pc.1, pw.1, skV.1 ) ]
 
   /*
   rule (modulo AC) enclavepkskVcuchannelpw_0_1111111111211[color=#ffffff,
-                                                           process="enclave(pk(skV.1), cu.1:channel, pw.1)",
+                                                           process="enclave(pk(skV.1), cu.1:channel, pw.1);",
                                                            issapicrule, role='Process']:
      [ State_1111111111211( cu, pc, pw, skV ) ]
     -->
-     [
-     State_11111111112111( cu, pc, pw, skV ),
-     State_11111111112112( cu, pc, pw, skV )
-     ]
+     [ State_11111111112111( cu, pc, pw, skV ) ]
   */
 
 rule (modulo E) newsharedk_0_11111111112111[color=#80407b,
@@ -2185,16 +2098,6 @@ rule (modulo E) p_0_11111111112111111111111111[color=#80407b,
      [ ]
   */
 
-rule (modulo E) p_0_11111111112112[color=#ffffff, process="0",
-                                   issapicrule, role='Process']:
-   [ State_11111111112112( cu.1, pc.1, pw.1, skV.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_11111111112112[color=#ffffff, process="0",
-                                      issapicrule, role='Process']:
-     [ State_11111111112112( cu, pc, pw, skV ) ] --> [ ]
-  */
-
 rule (modulo E) p_0_1111111111212[color=#ffffff, process="!",
                                   issapicrule, role='Process']:
    [ State_1111111111212( cu.1, pc.1, pw.1, skV.1 ) ]
@@ -2224,25 +2127,19 @@ rule (modulo E) p_1_1111111111212[color=#ffffff, process="!",
   */
 
 rule (modulo E) serverskVpcchannelpw_0_11111111112121[color=#ffffff,
-                                                      process="server(skV.1, pc.1:channel, pw.1)",
+                                                      process="server(skV.1, pc.1:channel, pw.1);",
                                                       issapicrule, role='Process']:
    [ State_11111111112121( cu.1, pc.1, pw.1, skV.1 ) ]
   -->
-   [
-   State_111111111121211( cu.1, pc.1, pw.1, skV.1 ),
-   State_111111111121212( cu.1, pc.1, pw.1, skV.1 )
-   ]
+   [ State_111111111121211( cu.1, pc.1, pw.1, skV.1 ) ]
 
   /*
   rule (modulo AC) serverskVpcchannelpw_0_11111111112121[color=#ffffff,
-                                                         process="server(skV.1, pc.1:channel, pw.1)",
+                                                         process="server(skV.1, pc.1:channel, pw.1);",
                                                          issapicrule, role='Process']:
      [ State_11111111112121( cu, pc, pw, skV ) ]
     -->
-     [
-     State_111111111121211( cu, pc, pw, skV ),
-     State_111111111121212( cu, pc, pw, skV )
-     ]
+     [ State_111111111121211( cu, pc, pw, skV ) ]
   */
 
 rule (modulo E) inshare_0_111111111121211[color=#658040,
@@ -3251,60 +3148,41 @@ rule (modulo E) p_0_111111111121211112[color=#658040, process="0",
      [ ]
   */
 
-rule (modulo E) p_0_11111111112121112[color=#658040, process="0",
-                                      issapicrule, role='server']:
-   [ State_11111111112121112( cu.1, pc.1, pw.1, share.1, skV.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_11111111112121112[color=#658040, process="0",
-                                         issapicrule, role='server']:
-     [ State_11111111112121112( cu, pc, pw, share, skV ) ] --> [ ]
-  */
-
-rule (modulo E) p_0_111111111121212[color=#ffffff, process="0",
-                                    issapicrule, role='Process']:
-   [ State_111111111121212( cu.1, pc.1, pw.1, skV.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_111111111121212[color=#ffffff, process="0",
-                                       issapicrule, role='Process']:
-     [ State_111111111121212( cu, pc, pw, skV ) ] --> [ ]
-  */
-
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
-Facts occur in the left-hand-side but not in any right-hand-side 
-=================================================================
-
-  1. in rule "p_0_11111111112121112":  factName `State_11111111112121112' arity: 5 multiplicity: Linear. Perhaps you want to use the fact in rule "inshare_0_111111111121211":  factName `State_1111111111212111' arity: 5 multiplicity: Linear
-
-Derivation Checks
-=================
-
-  Derivation checks timed out.
-  Use --derivcheck-timeout=INT to configure timeout.
-  Set to 0 to deactivate for no timeout.
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -3316,10 +3194,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-locations/OTP.spthy
 
   output:          examples/sapic/fast/feature-locations/OTP.spthy.tmp
-  processing time: 42.34s
-  
-  WARNING: 2 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 36.71s
   
   reachV (exists-trace): falsified - no trace found (29 steps)
   secrecy_key (all-traces): verified (8 steps)

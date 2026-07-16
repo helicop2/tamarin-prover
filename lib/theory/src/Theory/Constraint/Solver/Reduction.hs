@@ -305,7 +305,7 @@ insertAction i fa@(Fact _ ann _) = do
                           -- if the node is already present in the graph, do not insert it again. (This can be caused by substitutions applying and changing a goal.)
                           if not nodePresent
                              then do
-                               modM sNodes (M.insert i (Rule (IntrInfo (ConstrRule $ BC.pack "_pair")) ([(kuFactAnn ann m1),(kuFactAnn ann m2)]) ([fa]) ([fa]) []))
+                               modM sNodes (M.insert i (Rule (IntrInfo (ConstrRule (BC.pack "_pair") (NoEq pairSym))) ([(kuFactAnn ann m1),(kuFactAnn ann m2)]) ([fa]) ([fa]) []))
                                insertGoal goal False
                                markGoalAsSolved "pair" goal
                                requiresKU m1 *> requiresKU m2 *> return Changed
@@ -324,7 +324,7 @@ insertAction i fa@(Fact _ ann _) = do
                           -- if the node is already present in the graph, do not insert it again. (This can be caused by substitutions applying and changing a goal.)
                           if not nodePresent
                              then do
-                               modM sNodes (M.insert i (Rule (IntrInfo (ConstrRule $ BC.pack "_inv")) ([(kuFactAnn ann m)]) ([fa]) ([fa]) []))
+                               modM sNodes (M.insert i (Rule (IntrInfo (ConstrRule (BC.pack "_inv") (NoEq invSym))) ([(kuFactAnn ann m)]) ([fa]) ([fa]) []))
                                insertGoal goal False
                                markGoalAsSolved "inv" goal
                                requiresKU m *> return Changed
@@ -343,7 +343,7 @@ insertAction i fa@(Fact _ ann _) = do
                           -- if the node is already present in the graph, do not insert it again. (This can be caused by substitutions applying and changing a goal.)
                           if not nodePresent
                              then do
-                               modM sNodes (M.insert i (Rule (IntrInfo (ConstrRule $ BC.pack "_mult")) (map (\x -> kuFactAnn ann x) ms) ([fa]) ([fa]) []))
+                               modM sNodes (M.insert i (Rule (IntrInfo (ConstrRule (BC.pack "_mult") (AC Mult))) (map (\x -> kuFactAnn ann x) ms) ([fa]) ([fa]) []))
                                insertGoal goal False
                                markGoalAsSolved "mult" goal
                                mapM_ requiresKU ms *> return Changed
@@ -363,7 +363,7 @@ insertAction i fa@(Fact _ ann _) = do
                           -- if the node is already present in the graph, do not insert it again. (This can be caused by substitutions applying and changing a goal.)
                           if not nodePresent
                              then do
-                               modM sNodes (M.insert i (Rule (IntrInfo (ConstrRule $ BC.pack "_union")) (map (\x -> kuFactAnn ann x) ms) ([fa]) ([fa]) []))
+                               modM sNodes (M.insert i (Rule (IntrInfo (ConstrRule (BC.pack "_union") (AC Union))) (map (\x -> kuFactAnn ann x) ms) ([fa]) ([fa]) []))
                                insertGoal goal False
                                markGoalAsSolved "union" goal
                                mapM_ requiresKU ms *> return Changed
@@ -573,17 +573,26 @@ removeSolvedSplitGoals = do
 -- the sequent.
 substSystem :: Reduction ChangeIndicator
 substSystem = do
-    c1 <- substNodes
-    substEdges
-    substLastAtom
-    substLessAtoms
-    substSubtermStore
-    substFormulas
-    substSolvedFormulas
-    substLemmas
-    c2 <- substGoals
-    substNextGoalNr
-    return (c1 <> c2)
+    -- The equation-store substitution is applied to the whole system after
+    -- every solving step and is idempotent, so it is frequently empty (e.g.
+    -- right after a proof step renamed and reset it). Applying an empty
+    -- substitution cannot change anything and maintains no invariants, so we
+    -- skip the (otherwise O(system size)) traversal entirely.
+    subst <- getM sSubst
+    if nullSubst subst
+      then return Unchanged
+      else do
+        c1 <- substNodes
+        substEdges
+        substLastAtom
+        substLessAtoms
+        substSubtermStore
+        substFormulas
+        substSolvedFormulas
+        substLemmas
+        c2 <- substGoals
+        substNextGoalNr
+        return (c1 <> c2)
 
 -- no invariants to maintain here
 substEdges, substLessAtoms, substSubtermStore, substLastAtom, substFormulas,

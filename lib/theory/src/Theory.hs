@@ -203,9 +203,8 @@ module Theory (
   , openTranslatedTheory
   , openDiffTheory
 
-  , closeIntrRule
-  , applyChainReduction
-  , prettyChainReduction
+  , applyNDCcheck
+  , prettyNDCcheck
 
   , ClosedProtoRule(..)
   , OpenProtoRule(..)

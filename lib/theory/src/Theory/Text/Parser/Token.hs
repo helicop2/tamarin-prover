@@ -109,10 +109,12 @@ module Theory.Text.Parser.Token (
    , ParserState(..)
    , EqProcessingMode(..)
    , mkStateSig
-  , modifyStateSig
-  , modifyStateFlag
-  , modifyStateFvpPending
-  , parseStringWithState
+   , mkMacroStateSig
+   , modifyStateSig
+   , modifyStateFlag
+   , modifyStateFvpPending
+   , requireNaturalNumbers
+   , parseStringWithState
 
     -- * Basic Parsing
   , Parser
@@ -127,8 +129,9 @@ module Theory.Text.Parser.Token (
 
 import           Prelude             hiding (id, (.))
 
--- import           Data.Label
+import           Data.Label
 -- import           Data.Binary
+import qualified Data.ByteString            as B
 import           Data.List (foldl')
 -- import           Control.DeepSeq
 import qualified Data.Set                   as S
@@ -145,6 +148,8 @@ import           Text.Parsec         hiding ((<|>))
 import           Text.Parsec.Prim    (runPT)
 import qualified Text.Parsec.Token   as T
 
+import Term.Macro                           (macroToFunSym)
+import TheoryObject                         (theoryMacros)
 import           Theory
 import qualified Control.Monad.Catch as Catch
 import Data.Functor.Identity
@@ -166,19 +171,23 @@ data ParserState = PState
        , fvpPending :: [CtxtStRule]    -- Pending FVP equations to process after parsing
        , functionOrder :: [String]     -- Order of user-defined functions (definition order or from order: section)
        , eqProcessingMode :: EqProcessingMode  -- How equations should be processed
+       , reservedBuiltinNames :: [String] -- Reserved function names from enabled builtins
        }
        deriving( Eq, Ord, Show )
 
 -- | A monoid instance to combine parser signatures.
 instance Semigroup ParserState where
- PState sig1 flags1 fvp1 fo1 _ <> PState sig2 flags2 fvp2 fo2 m2 =
-   PState (sig1 <> sig2) (flags1 `S.union` flags2) (fvp1 ++ fvp2) (fo1 ++ fo2) m2
+ PState sig1 flags1 fvp1 fo1 _ rbn1 <> PState sig2 flags2 fvp2 fo2 m2 rbn2 =
+   PState (sig1 <> sig2) (flags1 `S.union` flags2) (fvp1 ++ fvp2) (fo1 ++ fo2) m2 (rbn1 ++ rbn2)
 
 instance Monoid ParserState where
-  mempty = PState {sig=mempty, flags = S.empty, fvpPending = [], functionOrder = [], eqProcessingMode = DirectMode}
+  mempty = PState {sig=mempty, flags = S.empty, fvpPending = [], functionOrder = [], eqProcessingMode = DirectMode, reservedBuiltinNames = []}
 
 mkStateSig :: MaudeSig -> ParserState
 mkStateSig sign = mempty {sig=sign, fvpPending = [], functionOrder = []}
+
+mkMacroStateSig :: OpenTheory -> ParserState
+mkMacroStateSig thy = mkStateSig (addMacrosToSignature (theoryMacros thy) (get sigpMaudeSig $ get thySignature thy))
 
 modifyStateSig ::  Monad m => (MaudeSig -> MaudeSig) -> ParsecT s ParserState m ()
 modifyStateSig modifier = do
@@ -194,6 +203,21 @@ modifyStateFvpPending :: Monad m => [CtxtStRule] -> ParsecT s ParserState m ()
 modifyStateFvpPending eqs = do
    st <- getState
    setState (st {fvpPending = fvpPending st ++ eqs})
+
+requireNaturalNumbers :: String -> Parser ()
+requireNaturalNumbers what = do
+    st <- getState
+    unless (enableNat (sig st)) $
+        fail $ what ++ " requires the natural-numbers builtin"
+
+-- | Add macros to the signature so they're recognized as function symbols
+addMacrosToSignature :: [(B.ByteString, [LVar], Term (Lit Name LVar))] -> MaudeSig -> MaudeSig
+addMacrosToSignature macros msig = 
+    foldl (\sig macro -> 
+        let funSym = macroToFunSym macro
+        in case funSym of
+            NoEq noEqSym -> addMacroSym noEqSym sig
+            _            -> sig) msig macros
 
 -- | A parser for a stream of tokens.
 type Parser a = Parsec String ParserState a
@@ -259,6 +283,7 @@ parseStringWithState flags0 srcDesc parser input =
     runIdentity $ runPT (T.whiteSpace spthy *> (parser >>= \v -> getState >>= \st -> return (v, st))) initState srcDesc input
   where
     initState = mempty {sig=pairMaudeSig, flags=S.fromList flags0}
+
 
 
 -- Token parsers
@@ -407,12 +432,18 @@ hexColor = T.lexeme spthy (singleQuoted hexCode <|> hexCode)
 -- | Parse a logical variable with the given sorts allowed.
 sortedLVar :: [LSort] -> Parser LVar
 sortedLVar ss =
-    asum $ map (try . mkSuffixParser) ss ++ map mkPrefixParser ss
+    asum $ mkSuffixParser : map mkPrefixParser ss
   where
-    mkSuffixParser s = do
-        (n, i) <- indexedIdentifier <* colon
-        symbol_ (sortSuffix s)
+    mkSuffixParser = do
+        (n, i) <- try (indexedIdentifier <* colon)
+        s <- asum $ map parseSuffix ss
+        when (s == LSortNat) $
+            requireNaturalNumbers "nat-sorted variables"
         return (LVar n s i)
+
+    parseSuffix s = do
+        try $ symbol_ (sortSuffix s)
+        return s
 
     mkPrefixParser s = do
         case s of
@@ -420,7 +451,8 @@ sortedLVar ss =
           LSortPub       -> void $ char '$'
           LSortFresh     -> void $ char '~'
           LSortNode      -> void $ char '#'
-          LSortNat       -> void $ char '%'
+          LSortNat       -> void $
+              char '%' *> requireNaturalNumbers "nat-sorted variables"
         (n, i) <- indexedIdentifier
         return (LVar n s i)
 
@@ -454,7 +486,10 @@ pubName = singleQuotedString
 
 -- | Parse a literal nat name, e.g. @%'n'@.
 natName :: Parser String
-natName = try (symbol "%" *> singleQuotedString)
+natName = do
+    _ <- try (symbol "%" <* lookAhead (char '\''))
+    requireNaturalNumbers "nat names"
+    singleQuotedString
 
 -- | Parse a Sapic Type
 typep :: Parser SapicType
@@ -482,7 +517,8 @@ sortedLVarNoSuffix ss =
           LSortPub       -> void $ char '$'
           LSortFresh     -> void $ char '~'
           LSortNode      -> void $ char '#'
-          LSortNat       -> void $ char '%'
+          LSortNat       -> void $
+              char '%' *> requireNaturalNumbers "nat-sorted variables"
         (n, i) <- indexedIdentifier
         return (LVar n s i)
 

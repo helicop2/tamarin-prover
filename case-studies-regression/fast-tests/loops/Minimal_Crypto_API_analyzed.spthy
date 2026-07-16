@@ -1,4 +1,6 @@
-theory Minimal_Crypto_API begin
+theory Minimal_Crypto_API
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -7,12 +9,6 @@ equations:
     fst(<x.1, x.2>) = x.1,
     sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2
-
-
-
-
-
-
 
 rule (modulo E) NewKey:
    [ Fr( ~h ), Fr( ~k ) ]
@@ -68,24 +64,14 @@ guarded formula characterizing all counter-examples:
 simplify
 by contradiction /* from formulas */
 
-
-
-
-
-
-
-
-
-
-
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: d224b4b965f014cbf18a3a01c5afbd5b20576914 (with uncommited changes), branch: develop
-Compiled at: 2025-09-08 09:04:28.158015016 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -97,7 +83,7 @@ summary of summaries:
 analyzed: examples/loops/Minimal_Crypto_API.spthy
 
   output:          examples/loops/Minimal_Crypto_API.spthy.tmp
-  processing time: 0.17s
+  processing time: 0.03s
   
   NewKey_invariant (all-traces): verified (7 steps)
   NewKey_secrecy (all-traces): verified (2 steps)

@@ -276,13 +276,8 @@
           "value": "\""
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "param"
-          },
-          "named": true,
-          "value": "path"
+          "type": "SYMBOL",
+          "name": "path"
         },
         {
           "type": "STRING",
@@ -688,6 +683,18 @@
         {
           "type": "STRING",
           "value": "destructor"
+        },
+        {
+          "type": "STRING",
+          "value": "AC"
+        },
+        {
+          "type": "STRING",
+          "value": "NDC"
+        },
+        {
+          "type": "STRING",
+          "value": "NDC-diff"
         }
       ]
     },
@@ -3460,6 +3467,18 @@
                 }
               ]
             }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
         ]
       }
@@ -3489,6 +3508,18 @@
                 }
               ]
             }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ","
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
         ]
       }
@@ -6242,7 +6273,7 @@
     },
     "quantified_formula": {
       "type": "PREC",
-      "value": "ATOM",
+      "value": "QUANTIFIER",
       "content": {
         "type": "SEQ",
         "members": [
@@ -6450,6 +6481,10 @@
     "param": {
       "type": "PATTERN",
       "value": "[^\"]*"
+    },
+    "path": {
+      "type": "PATTERN",
+      "value": "[A-Za-z0-9-\\_]*"
     },
     "export_query": {
       "type": "PATTERN",
@@ -6660,6 +6695,10 @@
       {
         "type": "STRING",
         "value": "LOGICAL_IFF"
+      },
+      {
+        "type": "STRING",
+        "value": "QUANTIFIER"
       },
       {
         "type": "STRING",

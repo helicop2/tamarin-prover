@@ -1,4 +1,6 @@
-theory OPC_UA_Secure_Communication begin
+theory OPC_UA_Secure_Communication
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -11,25 +13,9 @@ equations:
     snd(<x.1, x.2>) = x.2,
     verifyMac(mac(m, sk), m, sk) = true
 
-
-
 heuristic: p
 
 section{* The OPC UA Secure Conversation protocol *}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 restriction A_Counter_Increases:
   "∀ A B seq1 seq2 #i #j.
@@ -37,11 +23,26 @@ restriction A_Counter_Increases:
      (#i < #j)) ⇒
     (∃ dif. seq2 = (dif++seq1))"
 
+  /*
+  expanded formula:
+  "∀ A B seq1 seq2 #i #j.
+    (((Seq_Sent( A, B, seq1 ) @ #i) ∧ (Seq_Sent( A, B, seq2 ) @ #j)) ∧
+     (#i < #j)) ⇒
+    (∃ dif. seq2 = (dif++seq1))"
+  */
+
 restriction A_Counter_No_Reuse:
   "∀ A B seq #i #j.
     ((Seq_Sent( A, B, seq ) @ #i) ∧ (Seq_Sent( A, B, seq ) @ #j)) ⇒
     (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ A B seq #i #j.
+    ((Seq_Sent( A, B, seq ) @ #i) ∧ (Seq_Sent( A, B, seq ) @ #j)) ⇒
+    (#i = #j)"
+  */
 
 restriction B_Counter_Counter_Increases:
   "∀ A B seq1 seq2 #i #j.
@@ -49,11 +50,26 @@ restriction B_Counter_Counter_Increases:
      (#i < #j)) ⇒
     (∃ dif. seq2 = (dif++seq1))"
 
+  /*
+  expanded formula:
+  "∀ A B seq1 seq2 #i #j.
+    (((Seq_Recv( A, B, seq1 ) @ #i) ∧ (Seq_Recv( A, B, seq2 ) @ #j)) ∧
+     (#i < #j)) ⇒
+    (∃ dif. seq2 = (dif++seq1))"
+  */
+
 restriction B_Counter_No_Reuse:
   "∀ A B seq #i #j.
     ((Seq_Recv( A, B, seq ) @ #i) ∧ (Seq_Recv( A, B, seq ) @ #j)) ⇒
     (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ A B seq #i #j.
+    ((Seq_Recv( A, B, seq ) @ #i) ∧ (Seq_Recv( A, B, seq ) @ #j)) ⇒
+    (#i = #j)"
+  */
 
 lemma Executable:
   exists-trace "∃ A B m #i. Recv( A, B, m ) @ #i"
@@ -9384,24 +9400,6 @@ solve( State_111111111111( ~prog_1, ~prog_11111111, ~prog_1111111111,
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 rule (modulo E) MessageIDRule[color=#ffffff, process="!", issapicrule,
                               role='Process']:
    [ Fr( ~mid_ ) ] --> [ MID_Receiver( ~mid_ ), MID_Sender( ~mid_ ) ]
@@ -9413,6 +9411,20 @@ rule (modulo E) Init[color=#ffffff, process="!", issapicrule,
    [ ] --[ Init( ) ]-> [ !Semistate_1( ) ]
 
   /* has exactly the trivial AC variant */
+
+rule (modulo E) A_0_111111[color=#804046, process="!", issapicrule,
+                           role='A']:
+   [ State_111111( ~prog_1, a.1, b.1, kEnc.1, kSign.1 ) ]
+  --[ ProgressTo_1111111( ~prog_1 ) ]->
+   [ !Semistate_11111111( ~prog_1, a.1, b.1, kEnc.1, kSign.1 ) ]
+
+  /*
+  rule (modulo AC) A_0_111111[color=#804046, process="!", issapicrule,
+                              role='A']:
+     [ State_111111( ~prog_1, a, b, kEnc, kSign ) ]
+    --[ ProgressTo_1111111( ~prog_1 ) ]->
+     [ !Semistate_11111111( ~prog_1, a, b, kEnc, kSign ) ]
+  */
 
 rule (modulo E) p_1_1111111[color=#804046, process="!", issapicrule,
                             role='A']:
@@ -9646,20 +9658,6 @@ rule (modulo E) unlockab_0_11111111111111[color=#804046, process="0",
      [ ]
   */
 
-rule (modulo E) A_0_111111[color=#ffffff, process="0", issapicrule,
-                           role='Process']:
-   [ State_111111( ~prog_1, a.1, b.1, kEnc.1, kSign.1 ) ]
-  --[ ProgressTo_1111111( ~prog_1 ) ]->
-   [ !Semistate_11111111( ~prog_1, a.1, b.1, kEnc.1, kSign.1 ) ]
-
-  /*
-  rule (modulo AC) A_0_111111[color=#ffffff, process="0", issapicrule,
-                              role='Process']:
-     [ State_111111( ~prog_1, a, b, kEnc, kSign ) ]
-    --[ ProgressTo_1111111( ~prog_1 ) ]->
-     [ !Semistate_11111111( ~prog_1, a, b, kEnc, kSign ) ]
-  */
-
 rule (modulo E) p_1_[color=#ffffff, process="|", issapicrule,
                      role='Process']:
    [
@@ -9683,6 +9681,20 @@ rule (modulo E) p_1_[color=#ffffff, process="|", issapicrule,
      State_111111( ~prog_1, a, b, kEnc, kSign ),
      State_111112( ~prog_1, a, b, kEnc, kSign )
      ]
+  */
+
+rule (modulo E) B_0_111112[color=#628040, process="!", issapicrule,
+                           role='B']:
+   [ State_111112( ~prog_1, a.1, b.1, kEnc.1, kSign.1 ) ]
+  --[ ProgressTo_1111121( ~prog_1 ) ]->
+   [ !Semistate_11111211( ~prog_1, a.1, b.1, kEnc.1, kSign.1 ) ]
+
+  /*
+  rule (modulo AC) B_0_111112[color=#628040, process="!", issapicrule,
+                              role='B']:
+     [ State_111112( ~prog_1, a, b, kEnc, kSign ) ]
+    --[ ProgressTo_1111121( ~prog_1 ) ]->
+     [ !Semistate_11111211( ~prog_1, a, b, kEnc, kSign ) ]
   */
 
 rule (modulo E) p_1_1111121[color=#628040, process="!", issapicrule,
@@ -9926,31 +9938,32 @@ rule (modulo E) ifxmacmacMHSHseqmpadkSign_1_1111121111[color=#628040,
      [ ]
   */
 
-rule (modulo E) B_0_111112[color=#ffffff, process="0", issapicrule,
-                           role='Process']:
-   [ State_111112( ~prog_1, a.1, b.1, kEnc.1, kSign.1 ) ]
-  --[ ProgressTo_1111121( ~prog_1 ) ]->
-   [ !Semistate_11111211( ~prog_1, a.1, b.1, kEnc.1, kSign.1 ) ]
-
-  /*
-  rule (modulo AC) B_0_111112[color=#ffffff, process="0", issapicrule,
-                              role='Process']:
-     [ State_111112( ~prog_1, a, b, kEnc, kSign ) ]
-    --[ ProgressTo_1111121( ~prog_1 ) ]->
-     [ !Semistate_11111211( ~prog_1, a, b, kEnc, kSign ) ]
-  */
-
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 restriction locking_0:
   "∀ p pp l x lp #t1 #t3.
@@ -9968,6 +9981,24 @@ restriction locking_0:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_0( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_0( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_1:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -9984,30 +10015,83 @@ restriction locking_1:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_1( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction Progress_1_to_1111111:
   "∀ prog_1 #t.
     (ProgressFrom_1( prog_1 ) @ #t) ⇒
     (∃ #t.1. ProgressTo_1111111( prog_1 ) @ #t.1)"
+
+  /*
+  expanded formula:
+  "∀ prog_1 #t.
+    (ProgressFrom_1( prog_1 ) @ #t) ⇒
+    (∃ #t.1. ProgressTo_1111111( prog_1 ) @ #t.1)"
+  */
 
 restriction Progress_1_to_1111121:
   "∀ prog_1 #t.
     (ProgressFrom_1( prog_1 ) @ #t) ⇒
     (∃ #t.1. ProgressTo_1111121( prog_1 ) @ #t.1)"
 
+  /*
+  expanded formula:
+  "∀ prog_1 #t.
+    (ProgressFrom_1( prog_1 ) @ #t) ⇒
+    (∃ #t.1. ProgressTo_1111121( prog_1 ) @ #t.1)"
+  */
+
 restriction Progress_11111111_to_111111111:
   "∀ prog_11111111 #t.
     (ProgressFrom_11111111( prog_11111111 ) @ #t) ⇒
     (∃ #t.1. ProgressTo_111111111( prog_11111111 ) @ #t.1)"
+
+  /*
+  expanded formula:
+  "∀ prog_11111111 #t.
+    (ProgressFrom_11111111( prog_11111111 ) @ #t) ⇒
+    (∃ #t.1. ProgressTo_111111111( prog_11111111 ) @ #t.1)"
+  */
 
 restriction Progress_1111111111_to_111111111111111:
   "∀ prog_1111111111 #t.
     (ProgressFrom_1111111111( prog_1111111111 ) @ #t) ⇒
     (∃ #t.1. ProgressTo_111111111111111( prog_1111111111 ) @ #t.1)"
 
+  /*
+  expanded formula:
+  "∀ prog_1111111111 #t.
+    (ProgressFrom_1111111111( prog_1111111111 ) @ #t) ⇒
+    (∃ #t.1. ProgressTo_111111111111111( prog_1111111111 ) @ #t.1)"
+  */
+
 restriction Progress_11111211_to_111112111:
   "∀ prog_11111211 #t.
     (ProgressFrom_11111211( prog_11111211 ) @ #t) ⇒
     (∃ #t.1. ProgressTo_111112111( prog_11111211 ) @ #t.1)"
+
+  /*
+  expanded formula:
+  "∀ prog_11111211 #t.
+    (ProgressFrom_11111211( prog_11111211 ) @ #t) ⇒
+    (∃ #t.1. ProgressTo_111112111( prog_11111211 ) @ #t.1)"
+  */
 
 restriction Progress_1111121111_to_11111211111111_or_11111211112:
   "∀ prog_1111121111 #t.
@@ -10015,26 +10099,40 @@ restriction Progress_1111121111_to_11111211111111_or_11111211112:
     ((∃ #t.1. ProgressTo_11111211111111( prog_1111121111 ) @ #t.1) ∨
      (∃ #t.1. ProgressTo_11111211112( prog_1111121111 ) @ #t.1))"
 
+  /*
+  expanded formula:
+  "∀ prog_1111121111 #t.
+    (ProgressFrom_1111121111( prog_1111121111 ) @ #t) ⇒
+    ((∃ #t.1. ProgressTo_11111211111111( prog_1111121111 ) @ #t.1) ∨
+     (∃ #t.1. ProgressTo_11111211112( prog_1111121111 ) @ #t.1))"
+  */
+
 restriction progressInit:
   "∃ #t. Init( ) @ #t"
+
+  /*
+  expanded formula:
+  "∃ #t. Init( ) @ #t"
+  */
 
 restriction reliable:
   "∀ #i x y.
     (Send( x, y ) @ #i) ⇒ (∃ #j. (Receive( x, y ) @ #j) ∧ (#i < #j))"
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ #i x y.
+    (Send( x, y ) @ #i) ⇒ (∃ #j. (Receive( x, y ) @ #j) ∧ (#i < #j))"
+  */
 
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -10046,10 +10144,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/SCADA/opc_ua_secure_conversation.spthy
 
   output:          examples/sapic/fast/SCADA/opc_ua_secure_conversation.spthy.tmp
-  processing time: 39.01s
-  
-  WARNING: 1 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 33.86s
   
   Executable (exists-trace): verified (36 steps)
   all_received_were_sent (all-traces): verified (18 steps)

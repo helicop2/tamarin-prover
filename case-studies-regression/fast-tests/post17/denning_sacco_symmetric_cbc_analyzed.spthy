@@ -1,4 +1,6 @@
-theory dsscbc begin
+theory dsscbc
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -8,10 +10,6 @@ equations [convergent]:
     fst(<x.1, x.2>) = x.1,
     prefix(enc(<X, Y>, k)) = enc(X, k),
     snd(<x.1, x.2>) = x.2
-
-
-
-
 
 rule (modulo E) setup:
    [ Fr( ~k ) ] --[ KeyGen( $A ) ]-> [ !SharedKeyWithServer( $A, ~k ) ]
@@ -62,6 +60,11 @@ restriction singlesharedkeyperuser:
   "∀ A #i #j. ((KeyGen( A ) @ #i) ∧ (KeyGen( A ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ A #i #j. ((KeyGen( A ) @ #i) ∧ (KeyGen( A ) @ #j)) ⇒ (#i = #j)"
+  */
+
 lemma executable:
   exists-trace
   "∃ A B k #i #j.
@@ -111,31 +114,19 @@ simplify
 solve( !SharedKeyWithServer( $B, kbs ) ▶₁ #i )
   case setup
   solve( !KU( enc(<$A, ~k>, ~k.1) ) @ #vk )
-    case Server_case_3
+    case Server_case_1
     SOLVED // trace found
   qed
 qed
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: d224b4b965f014cbf18a3a01c5afbd5b20576914 (with uncommited changes), branch: develop
-Compiled at: 2025-09-08 09:04:28.158015016 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -147,7 +138,7 @@ summary of summaries:
 analyzed: examples/post17/denning_sacco_symmetric_cbc.spthy
 
   output:          examples/post17/denning_sacco_symmetric_cbc.spthy.tmp
-  processing time: 0.56s
+  processing time: 0.19s
   
   executable (exists-trace): verified (8 steps)
   sessionsmatch (all-traces): falsified - found trace (4 steps)

@@ -1,19 +1,13 @@
-theory ChannelsTestOne begin
+theory ChannelsTestOne
+
+begin
 
 // Function signature and definition of the equational theory E
 
 functions: fst/1, pair/2, snd/1
 equations: fst(<x.1, x.2>) = x.1, snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
-
-
-
-
-
-
 
 lemma secret:
   all-traces "∀ x #i. (Secret( x ) @ #i) ⇒ (¬(∃ #j. K( x ) @ #j))"
@@ -38,12 +32,6 @@ solve( State_1211( c, x ) ▶₀ #i )
   case incx_1_121
   SOLVED // trace found
 qed
-
-
-
-
-
-
 
 rule (modulo E) Init[color=#ffffff, process="new c.1;", issapicrule,
                      role='Process']:
@@ -71,14 +59,14 @@ rule (modulo E) p_0_1[color=#ffffff, process="|", issapicrule,
      [ State_1( c ) ] --> [ State_11( c ), State_12( c ) ]
   */
 
-rule (modulo E) P_0_11[color=#ffffff, process="P()", issapicrule,
+rule (modulo E) P_0_11[color=#ffffff, process="P();", issapicrule,
                        role='Process']:
-   [ State_11( c.1 ) ] --> [ State_111( c.1 ), State_112( c.1 ) ]
+   [ State_11( c.1 ) ] --> [ State_111( c.1 ) ]
 
   /*
-  rule (modulo AC) P_0_11[color=#ffffff, process="P()", issapicrule,
+  rule (modulo AC) P_0_11[color=#ffffff, process="P();", issapicrule,
                           role='Process']:
-     [ State_11( c ) ] --> [ State_111( c ), State_112( c ) ]
+     [ State_11( c ) ] --> [ State_111( c ) ]
   */
 
 rule (modulo E) newa_0_111[color=#6c8040, process="new a.1;",
@@ -137,24 +125,14 @@ rule (modulo E) p_0_111111[color=#6c8040, process="0", issapicrule,
      [ State_111111( a, c ) ] --> [ ]
   */
 
-rule (modulo E) p_0_112[color=#ffffff, process="0", issapicrule,
-                        role='Process']:
-   [ State_112( c.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_112[color=#ffffff, process="0", issapicrule,
-                           role='Process']:
-     [ State_112( c ) ] --> [ ]
-  */
-
-rule (modulo E) Q_0_12[color=#ffffff, process="Q()", issapicrule,
+rule (modulo E) Q_0_12[color=#ffffff, process="Q();", issapicrule,
                        role='Process']:
-   [ State_12( c.1 ) ] --> [ State_121( c.1 ), State_122( c.1 ) ]
+   [ State_12( c.1 ) ] --> [ State_121( c.1 ) ]
 
   /*
-  rule (modulo AC) Q_0_12[color=#ffffff, process="Q()", issapicrule,
+  rule (modulo AC) Q_0_12[color=#ffffff, process="Q();", issapicrule,
                           role='Process']:
-     [ State_12( c ) ] --> [ State_121( c ), State_122( c ) ]
+     [ State_12( c ) ] --> [ State_121( c ) ]
   */
 
 rule (modulo E) incx_0_121[color=#807140, process="in(c.1,x.1);",
@@ -201,28 +179,23 @@ rule (modulo E) p_0_12111[color=#807140, process="0", issapicrule,
      [ State_12111( c, x ) ] --> [ ]
   */
 
-rule (modulo E) p_0_122[color=#ffffff, process="0", issapicrule,
-                        role='Process']:
-   [ State_122( c.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_122[color=#ffffff, process="0", issapicrule,
-                           role='Process']:
-     [ State_122( c ) ] --> [ ]
-  */
-
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -234,7 +207,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/basic/channels4.spthy
 
   output:          examples/sapic/fast/basic/channels4.spthy.tmp
-  processing time: 0.16s
+  processing time: 0.05s
   
   secret (all-traces): verified (3 steps)
   received (exists-trace): verified (3 steps)

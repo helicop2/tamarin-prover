@@ -1,15 +1,13 @@
-theory Replication begin
+theory Replication
+
+begin
 
 // Function signature and definition of the equational theory E
 
 functions: fst/1, pair/2, snd/1
 equations: fst(<x.1, x.2>) = x.1, snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
-
-
 
 lemma onlyOneSecret:
   exists-trace
@@ -26,12 +24,6 @@ solve( State_11( x ) ▶₀ #i )
     SOLVED // trace found
   qed
 qed
-
-
-
-
-
-
 
 rule (modulo E) Init[color=#ffffff, process="!", issapicrule,
                      role='Process']:
@@ -95,14 +87,19 @@ restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -114,7 +111,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/basic/replication.spthy
 
   output:          examples/sapic/fast/basic/replication.spthy.tmp
-  processing time: 0.07s
+  processing time: 0.03s
   
   onlyOneSecret (exists-trace): verified (4 steps)
 

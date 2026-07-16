@@ -1,4 +1,6 @@
-theory Yubikey begin
+theory Yubikey
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -9,24 +11,12 @@ equations:
     sdec(senc(x.1, x.2), x.2) = x.1,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
 
 /* looping facts with injective instances: L_CellLocked/2, L_PureState/2
 */
 
 section{* The Yubikey-Protocol *}
-
-
-
-
-
-
-
-
-
-
 
 lemma secrecy_enc [sources, reuse]:
   all-traces "∀ k #i. (Sec( k ) @ #i) ⇒ (¬(∃ #j. !KU( k ) @ #j))"
@@ -382,6 +372,13 @@ restriction slightly_weaker_invariant:
     ((Login( pid, k, tc1 ) @ #t1) ∧ (Login( pid, k, tc2 ) @ #t2)) ⇒
     ((((#t1 < #t2) ∧ (∃ z. (tc1++z) = tc2)) ∨ (#t2 < #t1)) ∨ (#t1 = #t2))"
 
+  /*
+  expanded formula:
+  "∀ pid k tc1 tc2 #t1 #t2.
+    ((Login( pid, k, tc1 ) @ #t1) ∧ (Login( pid, k, tc2 ) @ #t2)) ⇒
+    ((((#t1 < #t2) ∧ (∃ z. (tc1++z) = tc2)) ∨ (#t2 < #t1)) ∨ (#t1 = #t2))"
+  */
+
 lemma Login_reachable:
   exists-trace "∃ #i pid k. Login( pid, k, ('one'++'zero') ) @ #i"
 /*
@@ -627,16 +624,6 @@ solve( (#t1 = #t2)  ∥ (#t2 < #t1) )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
 rule (modulo E) Init[color=#ffffff, process="!", issapicrule,
                      role='Process']:
    [ ] --[ Init( ) ]-> [ State_( ) ]
@@ -830,7 +817,8 @@ rule (modulo E) p_0_11111111[color=#ffffff, process="|", issapicrule,
   */
 
 rule (modulo E) ServerSLpidLpid_0_111111111[color=#ffffff,
-                                            process="Server(SL_pid.1, L_pid.1)", issapicrule, role='Process']:
+                                            process="Server(SL_pid.1, L_pid.1);", issapicrule,
+                                            role='Process']:
    [
    State_111111111( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
                     YL_pid.1
@@ -840,22 +828,17 @@ rule (modulo E) ServerSLpidLpid_0_111111111[color=#ffffff,
    [
    State_1111111111( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
                      YL_pid.1
-   ),
-   State_1111111112( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
-                     YL_pid.1
    )
    ]
 
   /*
   rule (modulo AC) ServerSLpidLpid_0_111111111[color=#ffffff,
-                                               process="Server(SL_pid.1, L_pid.1)", issapicrule,
+                                               process="Server(SL_pid.1, L_pid.1);", issapicrule,
                                                role='Process']:
      [ State_111111111( StateChannel, L_pid, SL_pid, StateChannel.1, YL_pid )
      ]
     -->
-     [
-     State_1111111111( StateChannel, L_pid, SL_pid, StateChannel.1, YL_pid ),
-     State_1111111112( StateChannel, L_pid, SL_pid, StateChannel.1, YL_pid )
+     [ State_1111111111( StateChannel, L_pid, SL_pid, StateChannel.1, YL_pid )
      ]
   */
 
@@ -922,7 +905,7 @@ rule (modulo E) lockSLpid_0_11111111111[color=#806040,
   */
 
 rule (modulo E) lookupSLpidastuple_0_111111111111[color=#806040,
-                                                  process="lookup SL_pid.1 as tuple.1", derivchecks,
+                                                  process="lookup SL_pid.1 as tuple.1", no_derivcheck,
                                                   issapicrule, role='Server']:
    [
    State_111111111111( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
@@ -940,7 +923,7 @@ rule (modulo E) lookupSLpidastuple_0_111111111111[color=#806040,
 
   /*
   rule (modulo AC) lookupSLpidastuple_0_111111111111[color=#806040,
-                                                     process="lookup SL_pid.1 as tuple.1", derivchecks,
+                                                     process="lookup SL_pid.1 as tuple.1", no_derivcheck,
                                                      issapicrule, role='Server']:
      [
      State_111111111111( StateChannel, L_pid, SL_pid, StateChannel.1, YL_pid,
@@ -1065,6 +1048,13 @@ restriction Restr_ifSmallerotctc_0_111111111111111_1:
     (Restr_ifSmallerotctc_0_111111111111111_1( x, x.1 ) @ #NOW) ⇒
     (∃ z. x = (z++x.1))"
 
+  /*
+  expanded formula:
+  "∀ x #NOW x.1.
+    (Restr_ifSmallerotctc_0_111111111111111_1( x, x.1 ) @ #NOW) ⇒
+    (∃ z. x = (z++x.1))"
+  */
+
 rule (modulo E) ifSmallerotctc_0_111111111111111[color=#806040,
                                                  process="if Smaller( otc.1, tc.1 )", issapicrule,
                                                  role='Server']:
@@ -1104,6 +1094,13 @@ restriction Restr_ifSmallerotctc_1_111111111111111_1:
     (Restr_ifSmallerotctc_1_111111111111111_1( x, x.1 ) @ #NOW) ⇒
     (¬(∃ z. x = (z++x.1)))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1.
+    (Restr_ifSmallerotctc_1_111111111111111_1( x, x.1 ) @ #NOW) ⇒
+    (¬(∃ z. x = (z++x.1)))"
+  */
 
 rule (modulo E) ifSmallerotctc_1_111111111111111[color=#806040,
                                                  process="if Smaller( otc.1, tc.1 )", issapicrule,
@@ -1370,25 +1367,6 @@ rule (modulo E) p_0_1111111111112[color=#806040, process="0",
      [ ]
   */
 
-rule (modulo E) p_0_1111111112[color=#ffffff, process="0", issapicrule,
-                               role='Process']:
-   [
-   State_1111111112( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
-                     YL_pid.1
-   )
-   ]
-  -->
-   [ ]
-
-  /*
-  rule (modulo AC) p_0_1111111112[color=#ffffff, process="0", issapicrule,
-                                  role='Process']:
-     [ State_1111111112( StateChannel, L_pid, SL_pid, StateChannel.1, YL_pid )
-     ]
-    -->
-     [ ]
-  */
-
 rule (modulo E) newk_0_111111112[color=#ffffff, process="new k.2;",
                                  issapicrule, role='Process']:
    [
@@ -1638,7 +1616,7 @@ rule (modulo E) p_1_111111112111111[color=#ffffff, process="!",
   */
 
 rule (modulo E) YubikeyLpidYLpidSLpidsecretidk_0_1111111121111111[color=#ffffff,
-                                                                  process="Yubikey(L_pid.1, YL_pid.1, SL_pid.1, secretid.2, k.2)",
+                                                                  process="Yubikey(L_pid.1, YL_pid.1, SL_pid.1, secretid.2, k.2);",
                                                                   issapicrule, role='Process']:
    [
    State_1111111121111111( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
@@ -1649,15 +1627,12 @@ rule (modulo E) YubikeyLpidYLpidSLpidsecretidk_0_1111111121111111[color=#ffffff,
    [
    State_11111111211111111( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
                             YL_pid.1, k.2, secretid.2
-   ),
-   State_11111111211111112( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
-                            YL_pid.1, k.2, secretid.2
    )
    ]
 
   /*
   rule (modulo AC) YubikeyLpidYLpidSLpidsecretidk_0_1111111121111111[color=#ffffff,
-                                                                     process="Yubikey(L_pid.1, YL_pid.1, SL_pid.1, secretid.2, k.2)",
+                                                                     process="Yubikey(L_pid.1, YL_pid.1, SL_pid.1, secretid.2, k.2);",
                                                                      issapicrule, role='Process']:
      [
      State_1111111121111111( StateChannel, L_pid, SL_pid, StateChannel.1,
@@ -1667,9 +1642,6 @@ rule (modulo E) YubikeyLpidYLpidSLpidsecretidk_0_1111111121111111[color=#ffffff,
     -->
      [
      State_11111111211111111( StateChannel, L_pid, SL_pid, StateChannel.1,
-                              YL_pid, k, secretid
-     ),
-     State_11111111211111112( StateChannel, L_pid, SL_pid, StateChannel.1,
                               YL_pid, k, secretid
      )
      ]
@@ -1802,7 +1774,7 @@ rule (modulo E) lockYLpid_0_1111111121111111111[color=#805140,
   */
 
 rule (modulo E) lookupYLpidassc_0_11111111211111111111[color=#805140,
-                                                       process="lookup YL_pid.1 as sc.1", derivchecks,
+                                                       process="lookup YL_pid.1 as sc.1", no_derivcheck,
                                                        issapicrule, role='Yubikey']:
    [
    State_11111111211111111111( StateChannel, L_pid.1, SL_pid.1,
@@ -1821,7 +1793,7 @@ rule (modulo E) lookupYLpidassc_0_11111111211111111111[color=#805140,
   // loop breaker: [1]
   /*
   rule (modulo AC) lookupYLpidassc_0_11111111211111111111[color=#805140,
-                                                          process="lookup YL_pid.1 as sc.1", derivchecks,
+                                                          process="lookup YL_pid.1 as sc.1", no_derivcheck,
                                                           issapicrule, role='Yubikey']:
      [
      State_11111111211111111111( StateChannel, L_pid, SL_pid, StateChannel.1,
@@ -2016,7 +1988,7 @@ rule (modulo E) lockYLpid_0_1111111121111111112[color=#805140,
   */
 
 rule (modulo E) lookupYLpidastc_0_11111111211111111121[color=#805140,
-                                                       process="lookup YL_pid.1 as tc.2", derivchecks,
+                                                       process="lookup YL_pid.1 as tc.2", no_derivcheck,
                                                        issapicrule, role='Yubikey']:
    [
    State_11111111211111111121( StateChannel, L_pid.1, SL_pid.1,
@@ -2035,7 +2007,7 @@ rule (modulo E) lookupYLpidastc_0_11111111211111111121[color=#805140,
   // loop breaker: [1]
   /*
   rule (modulo AC) lookupYLpidastc_0_11111111211111111121[color=#805140,
-                                                          process="lookup YL_pid.1 as tc.2", derivchecks,
+                                                          process="lookup YL_pid.1 as tc.2", no_derivcheck,
                                                           issapicrule, role='Yubikey']:
      [
      State_11111111211111111121( StateChannel, L_pid, SL_pid, StateChannel.1,
@@ -2339,45 +2311,35 @@ rule (modulo E) p_0_111111112111111111212[color=#805140, process="0",
      [ ]
   */
 
-rule (modulo E) p_0_11111111211111112[color=#ffffff, process="0",
-                                      issapicrule, role='Process']:
-   [
-   State_11111111211111112( StateChannel, L_pid.1, SL_pid.1, StateChannel.1,
-                            YL_pid.1, k.2, secretid.2
-   )
-   ]
-  -->
-   [ ]
-
-  /*
-  rule (modulo AC) p_0_11111111211111112[color=#ffffff, process="0",
-                                         issapicrule, role='Process']:
-     [
-     State_11111111211111112( StateChannel, L_pid, SL_pid, StateChannel.1,
-                              YL_pid, k, secretid
-     )
-     ]
-    -->
-     [ ]
-  */
-
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 /*
 WARNING: the following wellformedness checks failed!
-
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
 
 Facts occur in the left-hand-side but not in any right-hand-side 
 =================================================================
@@ -2387,21 +2349,14 @@ Facts occur in the left-hand-side but not in any right-hand-side
   2. in rule "p_0_111111112111111111112":  factName `State_111111112111111111112' arity: 7 multiplicity: Linear. Perhaps you want to use the fact in rule "lockYLpid_0_1111111121111111111":  factName `State_11111111211111111111' arity: 7 multiplicity: Linear
   
   3. in rule "p_0_111111112111111111212":  factName `State_111111112111111111212' arity: 7 multiplicity: Linear. Perhaps you want to use the fact in rule "lockYLpid_0_1111111121111111112":  factName `State_11111111211111111121' arity: 7 multiplicity: Linear
-
-Derivation Checks
-=================
-
-  Derivation checks timed out.
-  Use --derivcheck-timeout=INT to configure timeout.
-  Set to 0 to deactivate for no timeout.
 */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -2413,9 +2368,9 @@ summary of summaries:
 analyzed: examples/sapic/fast/Yubikey/Yubikey.spthy
 
   output:          examples/sapic/fast/Yubikey/Yubikey.spthy.tmp
-  processing time: 13.02s
+  processing time: 5.46s
   
-  WARNING: 3 wellformedness check failed!
+  WARNING: 1 wellformedness check failed!
            The analysis results might be wrong!
   
   secrecy_enc (all-traces): verified (17 steps)

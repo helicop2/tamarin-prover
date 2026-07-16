@@ -1,4 +1,6 @@
-theory PKCS11TemplatePolicy begin
+theory PKCS11TemplatePolicy
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -23,11 +25,7 @@ equations:
     snd(<x.1, x.2>) = x.2,
     tem(<k, templ>) = templ
 
-
-
 heuristic: p
-
-
 
 predicate: Can_encrypt( wrap, unwrap, enc, dec, sens, extr, trus, wwt, wt, ut
 )<=>enc = 'on'
@@ -58,20 +56,6 @@ predicate: Permits( t_wrap, t_unwrap, t_enc, t_dec, t_sens, t_extr, t_trus,
   (t_wwt = wwt)) ∧
  (t_wt = wt)) ∧
 (t_ut = ut)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 lemma dec_limits [use_induction, reuse]:
   all-traces
@@ -19965,40 +19949,6 @@ guarded formula characterizing all counter-examples:
 simplify
 by contradiction /* from formulas */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 rule (modulo E) Init[color=#ffffff,
                      process="insert <'F_template', 'trusted'>,<'on', 'on', 'off', 'off', 'on', 'on', 'on', 'on', 'usage', 'usage'
 >;",
@@ -20091,9 +20041,9 @@ rule (modulo E) p_0_11111111[color=#ffffff, process="|", issapicrule,
 
   /* has exactly the trivial AC variant */
 
-rule (modulo E) create_0_111111111[color=#ffffff, process="create()",
+rule (modulo E) create_0_111111111[color=#ffffff, process="create();",
                                    issapicrule, role='Process']:
-   [ State_111111111( ) ] --> [ State_1111111111( ), State_1111111112( ) ]
+   [ State_111111111( ) ] --> [ State_1111111111( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -20157,7 +20107,7 @@ rule (modulo E) newk_0_1111111111111[color=#638040, process="new k.1;",
 
 rule (modulo E) lookupFtemplateptrastempl_0_11111111111111[color=#638040,
                                                            process="lookup <'F_template', ptr.1> as templ.1",
-                                                           derivchecks, issapicrule, role='create']:
+                                                           no_derivcheck, issapicrule, role='create']:
    [ State_11111111111111( lock, L_h.1, atts.1, k.1, ptr.1 ) ]
   --[ IsIn( <'F_template', ptr.1>, templ.1 ) ]->
    [ State_111111111111111( lock, L_h.1, atts.1, k.1, ptr.1, templ.1 ) ]
@@ -20165,7 +20115,7 @@ rule (modulo E) lookupFtemplateptrastempl_0_11111111111111[color=#638040,
   /*
   rule (modulo AC) lookupFtemplateptrastempl_0_11111111111111[color=#638040,
                                                               process="lookup <'F_template', ptr.1> as templ.1",
-                                                              derivchecks, issapicrule, role='create']:
+                                                              no_derivcheck, issapicrule, role='create']:
      [ State_11111111111111( lock, L_h, atts, k, ptr ) ]
     --[ IsIn( <'F_template', ptr>, templ ) ]->
      [ State_111111111111111( lock, L_h, atts, k, ptr, templ ) ]
@@ -20173,7 +20123,7 @@ rule (modulo E) lookupFtemplateptrastempl_0_11111111111111[color=#638040,
 
 rule (modulo E) lookupFtemplateptrastempl_1_11111111111111[color=#638040,
                                                            process="lookup <'F_template', ptr.1> as templ.1",
-                                                           derivchecks, issapicrule, role='create']:
+                                                           no_derivcheck, issapicrule, role='create']:
    [ State_11111111111111( lock, L_h.1, atts.1, k.1, ptr.1 ) ]
   --[ IsNotSet( <'F_template', ptr.1> ) ]->
    [ State_111111111111112( lock, L_h.1, atts.1, k.1, ptr.1 ) ]
@@ -20181,7 +20131,7 @@ rule (modulo E) lookupFtemplateptrastempl_1_11111111111111[color=#638040,
   /*
   rule (modulo AC) lookupFtemplateptrastempl_1_11111111111111[color=#638040,
                                                               process="lookup <'F_template', ptr.1> as templ.1",
-                                                              derivchecks, issapicrule, role='create']:
+                                                              no_derivcheck, issapicrule, role='create']:
      [ State_11111111111111( lock, L_h, atts, k, ptr ) ]
     --[ IsNotSet( <'F_template', ptr> ) ]->
      [ State_111111111111112( lock, L_h, atts, k, ptr ) ]
@@ -20219,6 +20169,40 @@ restriction Restr_ifPermitsattwraptemplattunwraptemplattenctemplattdectemplattse
       (x.16 = x.17)) ∧
      (x.18 = x.19))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1 x.2 x.3 x.4 x.5 x.6 x.7 x.8 x.9 x.10 x.11 x.12 x.13 x.14
+     x.15 x.16 x.17 x.18 x.19.
+    (Restr_ifPermitsattwraptemplattunwraptemplattenctemplattdectemplattsenstemplattextrtemplatttrustemplattwwttemplattwttemplattuttemplattwrapattsattunwrapattsattencattsattdecattsattsensattsattextrattsatttrusattsattwwtattsattwtattsattutatts_0_111111111111111_1( x,
+                                                                                                                                                                                                                                                                      x.1,
+                                                                                                                                                                                                                                                                      x.2,
+                                                                                                                                                                                                                                                                      x.3,
+                                                                                                                                                                                                                                                                      x.4,
+                                                                                                                                                                                                                                                                      x.5,
+                                                                                                                                                                                                                                                                      x.6,
+                                                                                                                                                                                                                                                                      x.7,
+                                                                                                                                                                                                                                                                      x.8,
+                                                                                                                                                                                                                                                                      x.9,
+                                                                                                                                                                                                                                                                      x.10,
+                                                                                                                                                                                                                                                                      x.11,
+                                                                                                                                                                                                                                                                      x.12,
+                                                                                                                                                                                                                                                                      x.13,
+                                                                                                                                                                                                                                                                      x.14,
+                                                                                                                                                                                                                                                                      x.15,
+                                                                                                                                                                                                                                                                      x.16,
+                                                                                                                                                                                                                                                                      x.17,
+                                                                                                                                                                                                                                                                      x.18,
+                                                                                                                                                                                                                                                                      x.19
+     ) @ #NOW) ⇒
+    ((((((((((x = x.1) ∧ (x.2 = x.3)) ∧ (x.4 = x.5)) ∧ (x.6 = x.7)) ∧
+          (x.8 = x.9)) ∧
+         (x.10 = x.11)) ∧
+        (x.12 = x.13)) ∧
+       (x.14 = x.15)) ∧
+      (x.16 = x.17)) ∧
+     (x.18 = x.19))"
+  */
 
 rule (modulo E) ifPermitsattwraptemplattunwraptemplattenctemplattdectemplattsenstemplattextrtemplatttrustemplattwwttemplattwttemplattuttemplattwrapattsattunwrapattsattencattsattdecattsattsensattsattextrattsatttrusattsattwwtattsattwtattsattutatts_0_111111111111111[color=#638040,
                                                                                                                                                                                                                                                                         process="if Permits( attwrap(templ.1), attunwrap(templ.1), attenc(templ.1),
@@ -20418,6 +20402,40 @@ restriction Restr_ifPermitsattwraptemplattunwraptemplattenctemplattdectemplattse
         (x.16 = x.17)) ∧
        (x.18 = x.19)))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1 x.2 x.3 x.4 x.5 x.6 x.7 x.8 x.9 x.10 x.11 x.12 x.13 x.14
+     x.15 x.16 x.17 x.18 x.19.
+    (Restr_ifPermitsattwraptemplattunwraptemplattenctemplattdectemplattsenstemplattextrtemplatttrustemplattwwttemplattwttemplattuttemplattwrapattsattunwrapattsattencattsattdecattsattsensattsattextrattsatttrusattsattwwtattsattwtattsattutatts_1_111111111111111_1( x,
+                                                                                                                                                                                                                                                                      x.1,
+                                                                                                                                                                                                                                                                      x.2,
+                                                                                                                                                                                                                                                                      x.3,
+                                                                                                                                                                                                                                                                      x.4,
+                                                                                                                                                                                                                                                                      x.5,
+                                                                                                                                                                                                                                                                      x.6,
+                                                                                                                                                                                                                                                                      x.7,
+                                                                                                                                                                                                                                                                      x.8,
+                                                                                                                                                                                                                                                                      x.9,
+                                                                                                                                                                                                                                                                      x.10,
+                                                                                                                                                                                                                                                                      x.11,
+                                                                                                                                                                                                                                                                      x.12,
+                                                                                                                                                                                                                                                                      x.13,
+                                                                                                                                                                                                                                                                      x.14,
+                                                                                                                                                                                                                                                                      x.15,
+                                                                                                                                                                                                                                                                      x.16,
+                                                                                                                                                                                                                                                                      x.17,
+                                                                                                                                                                                                                                                                      x.18,
+                                                                                                                                                                                                                                                                      x.19
+     ) @ #NOW) ⇒
+    (¬((((((((((x = x.1) ∧ (x.2 = x.3)) ∧ (x.4 = x.5)) ∧ (x.6 = x.7)) ∧
+            (x.8 = x.9)) ∧
+           (x.10 = x.11)) ∧
+          (x.12 = x.13)) ∧
+         (x.14 = x.15)) ∧
+        (x.16 = x.17)) ∧
+       (x.18 = x.19)))"
+  */
 
 rule (modulo E) ifPermitsattwraptemplattunwraptemplattenctemplattdectemplattsenstemplattextrtemplatttrustemplattwwttemplattwttemplattuttemplattwrapattsattunwrapattsattencattsattdecattsattsensattsattextrattsatttrusattsattwwtattsattwtattsattutatts_1_111111111111111[color=#638040,
                                                                                                                                                                                                                                                                         process="if Permits( attwrap(templ.1), attunwrap(templ.1), attenc(templ.1),
@@ -20800,15 +20818,9 @@ rule (modulo E) p_0_111111111111112[color=#638040, process="0",
      [ State_111111111111112( lock, L_h, atts, k, ptr ) ] --> [ ]
   */
 
-rule (modulo E) p_0_1111111112[color=#ffffff, process="0", issapicrule,
-                               role='Process']:
-   [ State_1111111112( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) decrypt_0_111111112[color=#ffffff, process="decrypt()",
+rule (modulo E) decrypt_0_111111112[color=#ffffff, process="decrypt();",
                                     issapicrule, role='Process']:
-   [ State_111111112( ) ] --> [ State_1111111121( ), State_1111111122( ) ]
+   [ State_111111112( ) ] --> [ State_1111111121( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -20842,7 +20854,7 @@ rule (modulo E) lockdevice_0_11111111211[color=#414080,
   */
 
 rule (modulo E) lookupobjLhasv_0_111111112111[color=#414080,
-                                              process="lookup <'obj', L_h.2> as v.1", derivchecks,
+                                              process="lookup <'obj', L_h.2> as v.1", no_derivcheck,
                                               issapicrule, role='decrypt']:
    [ State_111111112111( lock.1, m.1, L_h.2, k.2 ) ]
   --[ IsIn( <'obj', L_h.2>, v.1 ) ]->
@@ -20850,7 +20862,7 @@ rule (modulo E) lookupobjLhasv_0_111111112111[color=#414080,
 
   /*
   rule (modulo AC) lookupobjLhasv_0_111111112111[color=#414080,
-                                                 process="lookup <'obj', L_h.2> as v.1", derivchecks,
+                                                 process="lookup <'obj', L_h.2> as v.1", no_derivcheck,
                                                  issapicrule, role='decrypt']:
      [ State_111111112111( lock, m, L_h, k ) ]
     --[ IsIn( <'obj', L_h>, v ) ]->
@@ -20858,7 +20870,7 @@ rule (modulo E) lookupobjLhasv_0_111111112111[color=#414080,
   */
 
 rule (modulo E) lookupobjLhasv_1_111111112111[color=#414080,
-                                              process="lookup <'obj', L_h.2> as v.1", derivchecks,
+                                              process="lookup <'obj', L_h.2> as v.1", no_derivcheck,
                                               issapicrule, role='decrypt']:
    [ State_111111112111( lock.1, m.1, L_h.2, k.2 ) ]
   --[ IsNotSet( <'obj', L_h.2> ) ]->
@@ -20866,7 +20878,7 @@ rule (modulo E) lookupobjLhasv_1_111111112111[color=#414080,
 
   /*
   rule (modulo AC) lookupobjLhasv_1_111111112111[color=#414080,
-                                                 process="lookup <'obj', L_h.2> as v.1", derivchecks,
+                                                 process="lookup <'obj', L_h.2> as v.1", no_derivcheck,
                                                  issapicrule, role='decrypt']:
      [ State_111111112111( lock, m, L_h, k ) ]
     --[ IsNotSet( <'obj', L_h> ) ]->
@@ -20879,6 +20891,14 @@ restriction Restr_ifCandecryptattwraptemvattunwraptemvattenctemvattdectemvattsen
      ) @ #NOW) ⇒
     (x = 'on')"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW.
+    (Restr_ifCandecryptattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_1111111121111_1( x
+     ) @ #NOW) ⇒
+    (x = 'on')"
+  */
 
 rule (modulo E) ifCandecryptattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_1111111121111[color=#414080,
                                                                                                                                                       process="if Can_decrypt( attwrap(tem(v.1)), attunwrap(tem(v.1)),
@@ -20928,6 +20948,14 @@ restriction Restr_ifCandecryptattwraptemvattunwraptemvattenctemvattdectemvattsen
      ) @ #NOW) ⇒
     (¬(x = 'on'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW.
+    (Restr_ifCandecryptattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_1111111121111_1( x
+     ) @ #NOW) ⇒
+    (¬(x = 'on'))"
+  */
 
 rule (modulo E) ifCandecryptattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_1111111121111[color=#414080,
                                                                                                                                                       process="if Can_decrypt( attwrap(tem(v.1)), attunwrap(tem(v.1)),
@@ -21096,15 +21124,9 @@ rule (modulo E) p_0_1111111121112[color=#414080, process="0",
      [ State_1111111121112( lock, m, L_h, k ) ] --> [ ]
   */
 
-rule (modulo E) p_0_1111111122[color=#ffffff, process="0", issapicrule,
-                               role='Process']:
-   [ State_1111111122( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) encrypt_0_11111112[color=#ffffff, process="encrypt()",
+rule (modulo E) encrypt_0_11111112[color=#ffffff, process="encrypt();",
                                    issapicrule, role='Process']:
-   [ State_11111112( ) ] --> [ State_111111121( ), State_111111122( ) ]
+   [ State_11111112( ) ] --> [ State_111111121( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -21135,15 +21157,15 @@ rule (modulo E) lockdevice_0_1111111211[color=#408075,
   */
 
 rule (modulo E) lookupobjLhasv_0_11111112111[color=#408075,
-                                             process="lookup <'obj', L_h.3> as v.2", derivchecks, issapicrule,
-                                             role='encrypt']:
+                                             process="lookup <'obj', L_h.3> as v.2", no_derivcheck,
+                                             issapicrule, role='encrypt']:
    [ State_11111112111( lock.2, m.2, L_h.3 ) ]
   --[ IsIn( <'obj', L_h.3>, v.2 ) ]->
    [ State_111111121111( lock.2, m.2, v.2, L_h.3 ) ]
 
   /*
   rule (modulo AC) lookupobjLhasv_0_11111112111[color=#408075,
-                                                process="lookup <'obj', L_h.3> as v.2", derivchecks,
+                                                process="lookup <'obj', L_h.3> as v.2", no_derivcheck,
                                                 issapicrule, role='encrypt']:
      [ State_11111112111( lock, m, L_h ) ]
     --[ IsIn( <'obj', L_h>, v ) ]->
@@ -21151,15 +21173,15 @@ rule (modulo E) lookupobjLhasv_0_11111112111[color=#408075,
   */
 
 rule (modulo E) lookupobjLhasv_1_11111112111[color=#408075,
-                                             process="lookup <'obj', L_h.3> as v.2", derivchecks, issapicrule,
-                                             role='encrypt']:
+                                             process="lookup <'obj', L_h.3> as v.2", no_derivcheck,
+                                             issapicrule, role='encrypt']:
    [ State_11111112111( lock.2, m.2, L_h.3 ) ]
   --[ IsNotSet( <'obj', L_h.3> ) ]->
    [ State_111111121112( lock.2, m.2, L_h.3 ) ]
 
   /*
   rule (modulo AC) lookupobjLhasv_1_11111112111[color=#408075,
-                                                process="lookup <'obj', L_h.3> as v.2", derivchecks,
+                                                process="lookup <'obj', L_h.3> as v.2", no_derivcheck,
                                                 issapicrule, role='encrypt']:
      [ State_11111112111( lock, m, L_h ) ]
     --[ IsNotSet( <'obj', L_h> ) ]->
@@ -21172,6 +21194,14 @@ restriction Restr_ifCanencryptattwraptemvattunwraptemvattenctemvattdectemvattsen
      ) @ #NOW) ⇒
     (x = 'on')"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW.
+    (Restr_ifCanencryptattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_111111121111_1( x
+     ) @ #NOW) ⇒
+    (x = 'on')"
+  */
 
 rule (modulo E) ifCanencryptattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_111111121111[color=#408075,
                                                                                                                                                      process="if Can_encrypt( attwrap(tem(v.2)), attunwrap(tem(v.2)),
@@ -21221,6 +21251,14 @@ restriction Restr_ifCanencryptattwraptemvattunwraptemvattenctemvattdectemvattsen
      ) @ #NOW) ⇒
     (¬(x = 'on'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW.
+    (Restr_ifCanencryptattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_111111121111_1( x
+     ) @ #NOW) ⇒
+    (¬(x = 'on'))"
+  */
 
 rule (modulo E) ifCanencryptattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_111111121111[color=#408075,
                                                                                                                                                      process="if Can_encrypt( attwrap(tem(v.2)), attunwrap(tem(v.2)),
@@ -21356,15 +21394,9 @@ rule (modulo E) p_0_111111121112[color=#408075, process="0", issapicrule,
      [ State_111111121112( lock, m, L_h ) ] --> [ ]
   */
 
-rule (modulo E) p_0_111111122[color=#ffffff, process="0", issapicrule,
-                              role='Process']:
-   [ State_111111122( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) wrap_0_1111112[color=#ffffff, process="wrap()",
+rule (modulo E) wrap_0_1111112[color=#ffffff, process="wrap();",
                                issapicrule, role='Process']:
-   [ State_1111112( ) ] --> [ State_11111121( ), State_11111122( ) ]
+   [ State_1111112( ) ] --> [ State_11111121( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -21395,7 +21427,7 @@ rule (modulo E) lockdevice_0_111111211[color=#806040,
   */
 
 rule (modulo E) lookupobjhasv_0_1111112111[color=#806040,
-                                           process="lookup <'obj', h1.1> as v1.1", derivchecks, issapicrule,
+                                           process="lookup <'obj', h1.1> as v1.1", no_derivcheck, issapicrule,
                                            role='wrap']:
    [ State_1111112111( h1.1, h2.1, lock.3 ) ]
   --[ IsIn( <'obj', h1.1>, v1.1 ) ]->
@@ -21403,7 +21435,7 @@ rule (modulo E) lookupobjhasv_0_1111112111[color=#806040,
 
   /*
   rule (modulo AC) lookupobjhasv_0_1111112111[color=#806040,
-                                              process="lookup <'obj', h1.1> as v1.1", derivchecks,
+                                              process="lookup <'obj', h1.1> as v1.1", no_derivcheck,
                                               issapicrule, role='wrap']:
      [ State_1111112111( h1, h2, lock ) ]
     --[ IsIn( <'obj', h1>, v1 ) ]->
@@ -21411,7 +21443,7 @@ rule (modulo E) lookupobjhasv_0_1111112111[color=#806040,
   */
 
 rule (modulo E) lookupobjhasv_1_1111112111[color=#806040,
-                                           process="lookup <'obj', h1.1> as v1.1", derivchecks, issapicrule,
+                                           process="lookup <'obj', h1.1> as v1.1", no_derivcheck, issapicrule,
                                            role='wrap']:
    [ State_1111112111( h1.1, h2.1, lock.3 ) ]
   --[ IsNotSet( <'obj', h1.1> ) ]->
@@ -21419,7 +21451,7 @@ rule (modulo E) lookupobjhasv_1_1111112111[color=#806040,
 
   /*
   rule (modulo AC) lookupobjhasv_1_1111112111[color=#806040,
-                                              process="lookup <'obj', h1.1> as v1.1", derivchecks,
+                                              process="lookup <'obj', h1.1> as v1.1", no_derivcheck,
                                               issapicrule, role='wrap']:
      [ State_1111112111( h1, h2, lock ) ]
     --[ IsNotSet( <'obj', h1> ) ]->
@@ -21427,15 +21459,15 @@ rule (modulo E) lookupobjhasv_1_1111112111[color=#806040,
   */
 
 rule (modulo E) lookupobjhasv_0_11111121111[color=#806040,
-                                            process="lookup <'obj', h2.1> as v2.1", derivchecks, issapicrule,
-                                            role='wrap']:
+                                            process="lookup <'obj', h2.1> as v2.1", no_derivcheck,
+                                            issapicrule, role='wrap']:
    [ State_11111121111( h1.1, h2.1, v1.1, lock.3 ) ]
   --[ IsIn( <'obj', h2.1>, v2.1 ) ]->
    [ State_111111211111( h1.1, h2.1, v1.1, v2.1, lock.3 ) ]
 
   /*
   rule (modulo AC) lookupobjhasv_0_11111121111[color=#806040,
-                                               process="lookup <'obj', h2.1> as v2.1", derivchecks,
+                                               process="lookup <'obj', h2.1> as v2.1", no_derivcheck,
                                                issapicrule, role='wrap']:
      [ State_11111121111( h1, h2, v1, lock ) ]
     --[ IsIn( <'obj', h2>, v2 ) ]->
@@ -21443,15 +21475,15 @@ rule (modulo E) lookupobjhasv_0_11111121111[color=#806040,
   */
 
 rule (modulo E) lookupobjhasv_1_11111121111[color=#806040,
-                                            process="lookup <'obj', h2.1> as v2.1", derivchecks, issapicrule,
-                                            role='wrap']:
+                                            process="lookup <'obj', h2.1> as v2.1", no_derivcheck,
+                                            issapicrule, role='wrap']:
    [ State_11111121111( h1.1, h2.1, v1.1, lock.3 ) ]
   --[ IsNotSet( <'obj', h2.1> ) ]->
    [ State_111111211112( h1.1, h2.1, v1.1, lock.3 ) ]
 
   /*
   rule (modulo AC) lookupobjhasv_1_11111121111[color=#806040,
-                                               process="lookup <'obj', h2.1> as v2.1", derivchecks,
+                                               process="lookup <'obj', h2.1> as v2.1", no_derivcheck,
                                                issapicrule, role='wrap']:
      [ State_11111121111( h1, h2, v1, lock ) ]
     --[ IsNotSet( <'obj', h2> ) ]->
@@ -21469,6 +21501,19 @@ restriction Restr_ifCanwrapattwraptemvattunwraptemvattenctemvattdectemvattsenste
     (((x = 'on') ∧ (x.1 = 'on')) ∧
      ((x.2 = 'off') ∨ ((x.3 = 'on') ∧ (x.4 = 'on'))))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1 x.2 x.3 x.4.
+    (Restr_ifCanwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemvattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_111111211111_1( x,
+                                                                                                                                                                                                                                                         x.1,
+                                                                                                                                                                                                                                                         x.2,
+                                                                                                                                                                                                                                                         x.3,
+                                                                                                                                                                                                                                                         x.4
+     ) @ #NOW) ⇒
+    (((x = 'on') ∧ (x.1 = 'on')) ∧
+     ((x.2 = 'off') ∨ ((x.3 = 'on') ∧ (x.4 = 'on'))))"
+  */
 
 rule (modulo E) ifCanwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemvattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_111111211111[color=#806040,
                                                                                                                                                                                                                                                            process="if Can_wrap( attwrap(tem(v1.1)), attunwrap(tem(v1.1)),
@@ -21597,6 +21642,19 @@ restriction Restr_ifCanwrapattwraptemvattunwraptemvattenctemvattdectemvattsenste
        ((x.2 = 'off') ∨ ((x.3 = 'on') ∧ (x.4 = 'on')))))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #NOW x.1 x.2 x.3 x.4.
+    (Restr_ifCanwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemvattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_111111211111_1( x,
+                                                                                                                                                                                                                                                         x.1,
+                                                                                                                                                                                                                                                         x.2,
+                                                                                                                                                                                                                                                         x.3,
+                                                                                                                                                                                                                                                         x.4
+     ) @ #NOW) ⇒
+    (¬(((x = 'on') ∧ (x.1 = 'on')) ∧
+       ((x.2 = 'off') ∨ ((x.3 = 'on') ∧ (x.4 = 'on')))))"
+  */
+
 rule (modulo E) ifCanwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemvattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_111111211111[color=#806040,
                                                                                                                                                                                                                                                            process="if Can_wrap( attwrap(tem(v1.1)), attunwrap(tem(v1.1)),
           attenc(tem(v1.1)), attdec(tem(v1.1)), attsens(tem(v1.1)),
@@ -21714,7 +21772,7 @@ rule (modulo E) ifCanwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemv
 
 rule (modulo E) lookupFtemplateattwttemvaswt_0_1111112111111[color=#806040,
                                                              process="lookup <'F_template', attwt(tem(v1.1))> as wt.1",
-                                                             derivchecks, issapicrule, role='wrap']:
+                                                             no_derivcheck, issapicrule, role='wrap']:
    [ State_1111112111111( h1.1, h2.1, v1.1, v2.1, lock.3 ) ]
   --[ IsIn( <'F_template', attwt(tem(v1.1))>, wt.1 ) ]->
    [ State_11111121111111( h1.1, h2.1, v1.1, v2.1, wt.1, lock.3 ) ]
@@ -21722,7 +21780,7 @@ rule (modulo E) lookupFtemplateattwttemvaswt_0_1111112111111[color=#806040,
   /*
   rule (modulo AC) lookupFtemplateattwttemvaswt_0_1111112111111[color=#806040,
                                                                 process="lookup <'F_template', attwt(tem(v1.1))> as wt.1",
-                                                                derivchecks, issapicrule, role='wrap']:
+                                                                no_derivcheck, issapicrule, role='wrap']:
      [ State_1111112111111( h1, h2, v1, v2, lock ) ]
     --[ IsIn( <'F_template', z>, wt ) ]->
      [ State_11111121111111( h1, h2, v1, v2, wt, lock ) ]
@@ -21740,7 +21798,7 @@ rule (modulo E) lookupFtemplateattwttemvaswt_0_1111112111111[color=#806040,
 
 rule (modulo E) lookupFtemplateattwttemvaswt_1_1111112111111[color=#806040,
                                                              process="lookup <'F_template', attwt(tem(v1.1))> as wt.1",
-                                                             derivchecks, issapicrule, role='wrap']:
+                                                             no_derivcheck, issapicrule, role='wrap']:
    [ State_1111112111111( h1.1, h2.1, v1.1, v2.1, lock.3 ) ]
   --[ IsNotSet( <'F_template', attwt(tem(v1.1))> ) ]->
    [ State_11111121111112( h1.1, h2.1, v1.1, v2.1, lock.3 ) ]
@@ -21748,7 +21806,7 @@ rule (modulo E) lookupFtemplateattwttemvaswt_1_1111112111111[color=#806040,
   /*
   rule (modulo AC) lookupFtemplateattwttemvaswt_1_1111112111111[color=#806040,
                                                                 process="lookup <'F_template', attwt(tem(v1.1))> as wt.1",
-                                                                derivchecks, issapicrule, role='wrap']:
+                                                                no_derivcheck, issapicrule, role='wrap']:
      [ State_1111112111111( h1, h2, v1, v2, lock ) ]
     --[ IsNotSet( <'F_template', z> ) ]->
      [ State_11111121111112( h1, h2, v1, v2, lock ) ]
@@ -21796,6 +21854,40 @@ restriction Restr_ifPermitsattwrapwtattunwrapwtattencwtattdecwtattsenswtattextrw
       (x.16 = x.17)) ∧
      (x.18 = x.19))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1 x.2 x.3 x.4 x.5 x.6 x.7 x.8 x.9 x.10 x.11 x.12 x.13 x.14
+     x.15 x.16 x.17 x.18 x.19.
+    (Restr_ifPermitsattwrapwtattunwrapwtattencwtattdecwtattsenswtattextrwtatttruswtattwwtwtattwtwtattutwtattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_11111121111111_1( x,
+                                                                                                                                                                                                                                       x.1,
+                                                                                                                                                                                                                                       x.2,
+                                                                                                                                                                                                                                       x.3,
+                                                                                                                                                                                                                                       x.4,
+                                                                                                                                                                                                                                       x.5,
+                                                                                                                                                                                                                                       x.6,
+                                                                                                                                                                                                                                       x.7,
+                                                                                                                                                                                                                                       x.8,
+                                                                                                                                                                                                                                       x.9,
+                                                                                                                                                                                                                                       x.10,
+                                                                                                                                                                                                                                       x.11,
+                                                                                                                                                                                                                                       x.12,
+                                                                                                                                                                                                                                       x.13,
+                                                                                                                                                                                                                                       x.14,
+                                                                                                                                                                                                                                       x.15,
+                                                                                                                                                                                                                                       x.16,
+                                                                                                                                                                                                                                       x.17,
+                                                                                                                                                                                                                                       x.18,
+                                                                                                                                                                                                                                       x.19
+     ) @ #NOW) ⇒
+    ((((((((((x = x.1) ∧ (x.2 = x.3)) ∧ (x.4 = x.5)) ∧ (x.6 = x.7)) ∧
+          (x.8 = x.9)) ∧
+         (x.10 = x.11)) ∧
+        (x.12 = x.13)) ∧
+       (x.14 = x.15)) ∧
+      (x.16 = x.17)) ∧
+     (x.18 = x.19))"
+  */
 
 rule (modulo E) ifPermitsattwrapwtattunwrapwtattencwtattdecwtattsenswtattextrwtatttruswtattwwtwtattwtwtattutwtattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_11111121111111[color=#806040,
                                                                                                                                                                                                                                          process="if Permits( attwrap(wt.1), attunwrap(wt.1), attenc(wt.1),
@@ -22043,6 +22135,40 @@ restriction Restr_ifPermitsattwrapwtattunwrapwtattencwtattdecwtattsenswtattextrw
         (x.16 = x.17)) ∧
        (x.18 = x.19)))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1 x.2 x.3 x.4 x.5 x.6 x.7 x.8 x.9 x.10 x.11 x.12 x.13 x.14
+     x.15 x.16 x.17 x.18 x.19.
+    (Restr_ifPermitsattwrapwtattunwrapwtattencwtattdecwtattsenswtattextrwtatttruswtattwwtwtattwtwtattutwtattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_11111121111111_1( x,
+                                                                                                                                                                                                                                       x.1,
+                                                                                                                                                                                                                                       x.2,
+                                                                                                                                                                                                                                       x.3,
+                                                                                                                                                                                                                                       x.4,
+                                                                                                                                                                                                                                       x.5,
+                                                                                                                                                                                                                                       x.6,
+                                                                                                                                                                                                                                       x.7,
+                                                                                                                                                                                                                                       x.8,
+                                                                                                                                                                                                                                       x.9,
+                                                                                                                                                                                                                                       x.10,
+                                                                                                                                                                                                                                       x.11,
+                                                                                                                                                                                                                                       x.12,
+                                                                                                                                                                                                                                       x.13,
+                                                                                                                                                                                                                                       x.14,
+                                                                                                                                                                                                                                       x.15,
+                                                                                                                                                                                                                                       x.16,
+                                                                                                                                                                                                                                       x.17,
+                                                                                                                                                                                                                                       x.18,
+                                                                                                                                                                                                                                       x.19
+     ) @ #NOW) ⇒
+    (¬((((((((((x = x.1) ∧ (x.2 = x.3)) ∧ (x.4 = x.5)) ∧ (x.6 = x.7)) ∧
+            (x.8 = x.9)) ∧
+           (x.10 = x.11)) ∧
+          (x.12 = x.13)) ∧
+         (x.14 = x.15)) ∧
+        (x.16 = x.17)) ∧
+       (x.18 = x.19)))"
+  */
 
 rule (modulo E) ifPermitsattwrapwtattunwrapwtattencwtattdecwtattsenswtattextrwtatttruswtattwwtwtattwtwtattutwtattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_11111121111111[color=#806040,
                                                                                                                                                                                                                                          process="if Permits( attwrap(wt.1), attunwrap(wt.1), attenc(wt.1),
@@ -22412,15 +22538,9 @@ rule (modulo E) p_0_11111121112[color=#806040, process="0", issapicrule,
      [ State_11111121112( h1, h2, lock ) ] --> [ ]
   */
 
-rule (modulo E) p_0_11111122[color=#ffffff, process="0", issapicrule,
-                             role='Process']:
-   [ State_11111122( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
-rule (modulo E) unwrap_0_111112[color=#ffffff, process="unwrap()",
+rule (modulo E) unwrap_0_111112[color=#ffffff, process="unwrap();",
                                 issapicrule, role='Process']:
-   [ State_111112( ) ] --> [ State_1111121( ), State_1111122( ) ]
+   [ State_111112( ) ] --> [ State_1111121( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -22455,7 +22575,7 @@ rule (modulo E) lockdevice_0_11111211[color=#7e8040,
   */
 
 rule (modulo E) lookupobjLhasv_0_111112111[color=#7e8040,
-                                           process="lookup <'obj', L_h.4> as v.3", derivchecks, issapicrule,
+                                           process="lookup <'obj', L_h.4> as v.3", no_derivcheck, issapicrule,
                                            role='unwrap']:
    [ State_111112111( atts.2, k.3, m.3, L_h.4, lock.4 ) ]
   --[ IsIn( <'obj', L_h.4>, v.3 ) ]->
@@ -22463,7 +22583,7 @@ rule (modulo E) lookupobjLhasv_0_111112111[color=#7e8040,
 
   /*
   rule (modulo AC) lookupobjLhasv_0_111112111[color=#7e8040,
-                                              process="lookup <'obj', L_h.4> as v.3", derivchecks,
+                                              process="lookup <'obj', L_h.4> as v.3", no_derivcheck,
                                               issapicrule, role='unwrap']:
      [ State_111112111( atts, k, m, L_h, lock ) ]
     --[ IsIn( <'obj', L_h>, v ) ]->
@@ -22471,7 +22591,7 @@ rule (modulo E) lookupobjLhasv_0_111112111[color=#7e8040,
   */
 
 rule (modulo E) lookupobjLhasv_1_111112111[color=#7e8040,
-                                           process="lookup <'obj', L_h.4> as v.3", derivchecks, issapicrule,
+                                           process="lookup <'obj', L_h.4> as v.3", no_derivcheck, issapicrule,
                                            role='unwrap']:
    [ State_111112111( atts.2, k.3, m.3, L_h.4, lock.4 ) ]
   --[ IsNotSet( <'obj', L_h.4> ) ]->
@@ -22479,7 +22599,7 @@ rule (modulo E) lookupobjLhasv_1_111112111[color=#7e8040,
 
   /*
   rule (modulo AC) lookupobjLhasv_1_111112111[color=#7e8040,
-                                              process="lookup <'obj', L_h.4> as v.3", derivchecks,
+                                              process="lookup <'obj', L_h.4> as v.3", no_derivcheck,
                                               issapicrule, role='unwrap']:
      [ State_111112111( atts, k, m, L_h, lock ) ]
     --[ IsNotSet( <'obj', L_h> ) ]->
@@ -22492,6 +22612,14 @@ restriction Restr_ifCanunwrapattwraptemvattunwraptemvattenctemvattdectemvattsens
      ) @ #NOW) ⇒
     (x = 'on')"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW.
+    (Restr_ifCanunwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_1111121111_1( x
+     ) @ #NOW) ⇒
+    (x = 'on')"
+  */
 
 rule (modulo E) ifCanunwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_1111121111[color=#7e8040,
                                                                                                                                                   process="if Can_unwrap( attwrap(tem(v.3)), attunwrap(tem(v.3)),
@@ -22541,6 +22669,14 @@ restriction Restr_ifCanunwrapattwraptemvattunwraptemvattenctemvattdectemvattsens
      ) @ #NOW) ⇒
     (¬(x = 'on'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW.
+    (Restr_ifCanunwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_1111121111_1( x
+     ) @ #NOW) ⇒
+    (¬(x = 'on'))"
+  */
 
 rule (modulo E) ifCanunwrapattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_1111121111[color=#7e8040,
                                                                                                                                                   process="if Can_unwrap( attwrap(tem(v.3)), attunwrap(tem(v.3)),
@@ -22626,7 +22762,7 @@ rule (modulo E) ifkeyvk_1_11111211111[color=#7e8040,
 
 rule (modulo E) lookupFtemplateattuttemvasut_0_111112111111[color=#7e8040,
                                                             process="lookup <'F_template', attut(tem(v.3))> as ut.1",
-                                                            derivchecks, issapicrule, role='unwrap']:
+                                                            no_derivcheck, issapicrule, role='unwrap']:
    [ State_111112111111( atts.2, k.3, m.3, v.3, L_h.4, lock.4 ) ]
   --[ IsIn( <'F_template', attut(tem(v.3))>, ut.1 ) ]->
    [ State_1111121111111( ut.1, atts.2, k.3, m.3, v.3, L_h.4, lock.4 ) ]
@@ -22634,7 +22770,7 @@ rule (modulo E) lookupFtemplateattuttemvasut_0_111112111111[color=#7e8040,
   /*
   rule (modulo AC) lookupFtemplateattuttemvasut_0_111112111111[color=#7e8040,
                                                                process="lookup <'F_template', attut(tem(v.3))> as ut.1",
-                                                               derivchecks, issapicrule, role='unwrap']:
+                                                               no_derivcheck, issapicrule, role='unwrap']:
      [ State_111112111111( atts, k, m, v, L_h, lock ) ]
     --[ IsIn( <'F_template', z>, ut ) ]->
      [ State_1111121111111( ut, atts, k, m, v, L_h, lock ) ]
@@ -22652,7 +22788,7 @@ rule (modulo E) lookupFtemplateattuttemvasut_0_111112111111[color=#7e8040,
 
 rule (modulo E) lookupFtemplateattuttemvasut_1_111112111111[color=#7e8040,
                                                             process="lookup <'F_template', attut(tem(v.3))> as ut.1",
-                                                            derivchecks, issapicrule, role='unwrap']:
+                                                            no_derivcheck, issapicrule, role='unwrap']:
    [ State_111112111111( atts.2, k.3, m.3, v.3, L_h.4, lock.4 ) ]
   --[ IsNotSet( <'F_template', attut(tem(v.3))> ) ]->
    [ State_1111121111112( atts.2, k.3, m.3, v.3, L_h.4, lock.4 ) ]
@@ -22660,7 +22796,7 @@ rule (modulo E) lookupFtemplateattuttemvasut_1_111112111111[color=#7e8040,
   /*
   rule (modulo AC) lookupFtemplateattuttemvasut_1_111112111111[color=#7e8040,
                                                                process="lookup <'F_template', attut(tem(v.3))> as ut.1",
-                                                               derivchecks, issapicrule, role='unwrap']:
+                                                               no_derivcheck, issapicrule, role='unwrap']:
      [ State_111112111111( atts, k, m, v, L_h, lock ) ]
     --[ IsNotSet( <'F_template', z> ) ]->
      [ State_1111121111112( atts, k, m, v, L_h, lock ) ]
@@ -22708,6 +22844,40 @@ restriction Restr_ifPermitsattwraputattunwraputattencutattdecutattsensutattextru
       (x.16 = x.17)) ∧
      (x.18 = x.19))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1 x.2 x.3 x.4 x.5 x.6 x.7 x.8 x.9 x.10 x.11 x.12 x.13 x.14
+     x.15 x.16 x.17 x.18 x.19.
+    (Restr_ifPermitsattwraputattunwraputattencutattdecutattsensutattextrutatttrusutattwwtutattwtutattututattwrapattsattunwrapattsattencattsattdecattsattsensattsattextrattsatttrusattsattwwtattsattwtattsattutatts_0_1111121111111_1( x,
+                                                                                                                                                                                                                                      x.1,
+                                                                                                                                                                                                                                      x.2,
+                                                                                                                                                                                                                                      x.3,
+                                                                                                                                                                                                                                      x.4,
+                                                                                                                                                                                                                                      x.5,
+                                                                                                                                                                                                                                      x.6,
+                                                                                                                                                                                                                                      x.7,
+                                                                                                                                                                                                                                      x.8,
+                                                                                                                                                                                                                                      x.9,
+                                                                                                                                                                                                                                      x.10,
+                                                                                                                                                                                                                                      x.11,
+                                                                                                                                                                                                                                      x.12,
+                                                                                                                                                                                                                                      x.13,
+                                                                                                                                                                                                                                      x.14,
+                                                                                                                                                                                                                                      x.15,
+                                                                                                                                                                                                                                      x.16,
+                                                                                                                                                                                                                                      x.17,
+                                                                                                                                                                                                                                      x.18,
+                                                                                                                                                                                                                                      x.19
+     ) @ #NOW) ⇒
+    ((((((((((x = x.1) ∧ (x.2 = x.3)) ∧ (x.4 = x.5)) ∧ (x.6 = x.7)) ∧
+          (x.8 = x.9)) ∧
+         (x.10 = x.11)) ∧
+        (x.12 = x.13)) ∧
+       (x.14 = x.15)) ∧
+      (x.16 = x.17)) ∧
+     (x.18 = x.19))"
+  */
 
 rule (modulo E) ifPermitsattwraputattunwraputattencutattdecutattsensutattextrutatttrusutattwwtutattwtutattututattwrapattsattunwrapattsattencattsattdecattsattsensattsattextrattsatttrusattsattwwtattsattwtattsattutatts_0_1111121111111[color=#7e8040,
                                                                                                                                                                                                                                         process="if Permits( attwrap(ut.1), attunwrap(ut.1), attenc(ut.1),
@@ -22907,6 +23077,40 @@ restriction Restr_ifPermitsattwraputattunwraputattencutattdecutattsensutattextru
         (x.16 = x.17)) ∧
        (x.18 = x.19)))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1 x.2 x.3 x.4 x.5 x.6 x.7 x.8 x.9 x.10 x.11 x.12 x.13 x.14
+     x.15 x.16 x.17 x.18 x.19.
+    (Restr_ifPermitsattwraputattunwraputattencutattdecutattsensutattextrutatttrusutattwwtutattwtutattututattwrapattsattunwrapattsattencattsattdecattsattsensattsattextrattsatttrusattsattwwtattsattwtattsattutatts_1_1111121111111_1( x,
+                                                                                                                                                                                                                                      x.1,
+                                                                                                                                                                                                                                      x.2,
+                                                                                                                                                                                                                                      x.3,
+                                                                                                                                                                                                                                      x.4,
+                                                                                                                                                                                                                                      x.5,
+                                                                                                                                                                                                                                      x.6,
+                                                                                                                                                                                                                                      x.7,
+                                                                                                                                                                                                                                      x.8,
+                                                                                                                                                                                                                                      x.9,
+                                                                                                                                                                                                                                      x.10,
+                                                                                                                                                                                                                                      x.11,
+                                                                                                                                                                                                                                      x.12,
+                                                                                                                                                                                                                                      x.13,
+                                                                                                                                                                                                                                      x.14,
+                                                                                                                                                                                                                                      x.15,
+                                                                                                                                                                                                                                      x.16,
+                                                                                                                                                                                                                                      x.17,
+                                                                                                                                                                                                                                      x.18,
+                                                                                                                                                                                                                                      x.19
+     ) @ #NOW) ⇒
+    (¬((((((((((x = x.1) ∧ (x.2 = x.3)) ∧ (x.4 = x.5)) ∧ (x.6 = x.7)) ∧
+            (x.8 = x.9)) ∧
+           (x.10 = x.11)) ∧
+          (x.12 = x.13)) ∧
+         (x.14 = x.15)) ∧
+        (x.16 = x.17)) ∧
+       (x.18 = x.19)))"
+  */
 
 rule (modulo E) ifPermitsattwraputattunwraputattencutattdecutattsensutattextrutatttrusutattwwtutattwtutattututattwrapattsattunwrapattsattencattsattdecattsattsensattsattextrattsatttrusattsattwwtattsattwtattsattutatts_1_1111121111111[color=#7e8040,
                                                                                                                                                                                                                                         process="if Permits( attwrap(ut.1), attunwrap(ut.1), attenc(ut.1),
@@ -23375,15 +23579,9 @@ rule (modulo E) p_0_1111121112[color=#7e8040, process="0", issapicrule,
      [ State_1111121112( atts, k, m, L_h, lock ) ] --> [ ]
   */
 
-rule (modulo E) p_0_1111122[color=#ffffff, process="0", issapicrule,
-                            role='Process']:
-   [ State_1111122( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
 rule (modulo E) getkeyvalue_0_11112[color=#ffffff,
-                                    process="get_keyvalue()", issapicrule, role='Process']:
-   [ State_11112( ) ] --> [ State_111121( ), State_111122( ) ]
+                                    process="get_keyvalue();", issapicrule, role='Process']:
+   [ State_11112( ) ] --> [ State_111121( ) ]
 
   /* has exactly the trivial AC variant */
 
@@ -23412,7 +23610,7 @@ rule (modulo E) lockdevice_0_1111211[color=#805640,
   */
 
 rule (modulo E) lookupobjLhasv_0_11112111[color=#805640,
-                                          process="lookup <'obj', L_h.5> as v.4", derivchecks, issapicrule,
+                                          process="lookup <'obj', L_h.5> as v.4", no_derivcheck, issapicrule,
                                           role='get_keyvalue']:
    [ State_11112111( L_h.5, lock.5 ) ]
   --[ IsIn( <'obj', L_h.5>, v.4 ) ]->
@@ -23420,15 +23618,15 @@ rule (modulo E) lookupobjLhasv_0_11112111[color=#805640,
 
   /*
   rule (modulo AC) lookupobjLhasv_0_11112111[color=#805640,
-                                             process="lookup <'obj', L_h.5> as v.4", derivchecks, issapicrule,
-                                             role='get_keyvalue']:
+                                             process="lookup <'obj', L_h.5> as v.4", no_derivcheck,
+                                             issapicrule, role='get_keyvalue']:
      [ State_11112111( L_h, lock ) ]
     --[ IsIn( <'obj', L_h>, v ) ]->
      [ State_111121111( v, L_h, lock ) ]
   */
 
 rule (modulo E) lookupobjLhasv_1_11112111[color=#805640,
-                                          process="lookup <'obj', L_h.5> as v.4", derivchecks, issapicrule,
+                                          process="lookup <'obj', L_h.5> as v.4", no_derivcheck, issapicrule,
                                           role='get_keyvalue']:
    [ State_11112111( L_h.5, lock.5 ) ]
   --[ IsNotSet( <'obj', L_h.5> ) ]->
@@ -23436,8 +23634,8 @@ rule (modulo E) lookupobjLhasv_1_11112111[color=#805640,
 
   /*
   rule (modulo AC) lookupobjLhasv_1_11112111[color=#805640,
-                                             process="lookup <'obj', L_h.5> as v.4", derivchecks, issapicrule,
-                                             role='get_keyvalue']:
+                                             process="lookup <'obj', L_h.5> as v.4", no_derivcheck,
+                                             issapicrule, role='get_keyvalue']:
      [ State_11112111( L_h, lock ) ]
     --[ IsNotSet( <'obj', L_h> ) ]->
      [ State_111121112( L_h, lock ) ]
@@ -23449,6 +23647,14 @@ restriction Restr_ifCangetkeyvalueattwraptemvattunwraptemvattenctemvattdectemvat
      ) @ #NOW) ⇒
     (x = 'off')"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW.
+    (Restr_ifCangetkeyvalueattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_111121111_1( x
+     ) @ #NOW) ⇒
+    (x = 'off')"
+  */
 
 rule (modulo E) ifCangetkeyvalueattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_0_111121111[color=#805640,
                                                                                                                                                       process="if Can_get_keyvalue( attwrap(tem(v.4)), attunwrap(tem(v.4)),
@@ -23498,6 +23704,14 @@ restriction Restr_ifCangetkeyvalueattwraptemvattunwraptemvattenctemvattdectemvat
      ) @ #NOW) ⇒
     (¬(x = 'off'))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW.
+    (Restr_ifCangetkeyvalueattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_111121111_1( x
+     ) @ #NOW) ⇒
+    (¬(x = 'off'))"
+  */
 
 rule (modulo E) ifCangetkeyvalueattwraptemvattunwraptemvattenctemvattdectemvattsenstemvattextrtemvatttrustemvattwwttemvattwttemvattuttemv_1_111121111[color=#805640,
                                                                                                                                                       process="if Can_get_keyvalue( attwrap(tem(v.4)), attunwrap(tem(v.4)),
@@ -23628,12 +23842,6 @@ rule (modulo E) p_0_111121112[color=#805640, process="0", issapicrule,
      [ State_111121112( L_h, lock ) ] --> [ ]
   */
 
-rule (modulo E) p_0_111122[color=#ffffff, process="0", issapicrule,
-                           role='Process']:
-   [ State_111122( ) ] --> [ ]
-
-  /* has exactly the trivial AC variant */
-
 restriction set_in:
   "∀ x y #t3.
     (IsIn( x, y ) @ #t3) ⇒
@@ -23642,22 +23850,53 @@ restriction set_in:
       (∀ #t1 yp.
         (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x y #t3.
+    (IsIn( x, y ) @ #t3) ⇒
+    (∃ #t2.
+      ((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ∧
+      (∀ #t1 yp.
+        (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
+  */
+
 restriction set_notin:
   "∀ x #t3.
     (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #t3.
+    (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
+  */
+
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 restriction locking_0:
   "∀ p pp l x lp #t1 #t3.
@@ -23675,6 +23914,24 @@ restriction locking_0:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_0( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_0( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_1:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -23690,6 +23947,24 @@ restriction locking_1:
            (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
+
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_1( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
 restriction locking_2:
   "∀ p pp l x lp #t1 #t3.
@@ -23707,6 +23982,24 @@ restriction locking_2:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_2( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_2( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_3:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_3( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -23722,6 +24015,24 @@ restriction locking_3:
            (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
+
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_3( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_3( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
 restriction locking_4:
   "∀ p pp l x lp #t1 #t3.
@@ -23739,6 +24050,24 @@ restriction locking_4:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_4( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_4( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_5:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_5( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -23755,30 +24084,32 @@ restriction locking_5:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_5( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_5( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
-
-Message Derivation Checks
-=========================
-
-  The variables of the following rule(s) are not derivable from their premises, you may be performing unintended pattern matching.
-
-Rule inLhsencmk_0_1111111121: 
-Failed to derive Variable(s): m.1, k.2
-
-Rule inLhsencmkatts_0_1111121: 
-Failed to derive Variable(s): k.3, m.3
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -23790,10 +24121,7 @@ summary of summaries:
 analyzed: examples/sapic/slow/PKCS11/pkcs11-templates.spthy
 
   output:          examples/sapic/slow/PKCS11/pkcs11-templates.spthy.tmp
-  processing time: 85.24s
-  
-  WARNING: 2 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 76.15s
   
   dec_limits (all-traces): verified (1402 steps)
   bad_keys (all-traces): verified (318 steps)

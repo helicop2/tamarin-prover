@@ -1,13 +1,11 @@
-theory Minimal_Loop_Example begin
+theory Minimal_Loop_Example
+
+begin
 
 // Function signature and definition of the equational theory E
 
 functions: fst/1, pair/2, snd/1
 equations: fst(<x.1, x.2>) = x.1, snd(<x.1, x.2>) = x.2
-
-
-
-
 
 /* looping facts with injective instances: A/1 */
 
@@ -150,20 +148,14 @@ induction
   SOLVED // trace found
 qed
 
-
-
-
-
-
-
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -175,7 +167,7 @@ summary of summaries:
 analyzed: examples/loops/Minimal_Loop_Example.spthy
 
   output:          examples/loops/Minimal_Loop_Example.spthy.tmp
-  processing time: 0.07s
+  processing time: 0.03s
   
   Start_before_Loop (all-traces): verified (7 steps)
   Start_before_Stop (all-traces): verified (4 steps)

@@ -1,4 +1,6 @@
-theory JCS12_Typing_Example begin
+theory JCS12_Typing_Example
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -7,14 +9,6 @@ equations:
     adec(aenc(x.1, pk(x.2)), x.2) = x.1,
     fst(<x.1, x.2>) = x.1,
     snd(<x.1, x.2>) = x.2
-
-
-
-
-
-
-
-
 
 rule (modulo E) Register_pk:
    [ Fr( ~ltk ) ] --> [ !Ltk( $A, ~ltk ), !Pk( $A, pk(~ltk) ) ]
@@ -272,28 +266,14 @@ solve( Client_1( C, S, k ) ▶₀ #i )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: d224b4b965f014cbf18a3a01c5afbd5b20576914 (with uncommited changes), branch: develop
-Compiled at: 2025-09-08 09:04:28.158015016 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -305,7 +285,7 @@ summary of summaries:
 analyzed: examples/loops/JCS12_Typing_Example.spthy
 
   output:          examples/loops/JCS12_Typing_Example.spthy.tmp
-  processing time: 0.36s
+  processing time: 0.06s
   
   typing_assertion (all-traces): verified (15 steps)
   Client_session_key_secrecy_raw (all-traces): verified (8 steps)

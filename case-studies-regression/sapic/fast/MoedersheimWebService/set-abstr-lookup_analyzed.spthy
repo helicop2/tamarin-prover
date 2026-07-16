@@ -1,4 +1,6 @@
-theory SetAbst begin
+theory SetAbst
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -10,21 +12,9 @@ equations:
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
-
-
 heuristic: p
 
 section{* The PKI-example *}
-
-
-
-
-
-
-
-
-
-
 
 lemma Knows_Honest_Key_imp_Revoked:
   all-traces
@@ -64,24 +54,6 @@ next
     qed
   qed
 qed
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 rule (modulo E) Init[color=#ffffff, process="!", issapicrule,
                      role='Process']:
@@ -141,16 +113,14 @@ rule (modulo E) p_0_111[color=#ffffff, process="|", issapicrule,
      [ State_111( pki ) ] --> [ State_1111( pki ), State_1112( pki ) ]
   */
 
-rule (modulo E) Server_0_1111[color=#ffffff, process="Server()",
+rule (modulo E) Server_0_1111[color=#ffffff, process="Server();",
                               issapicrule, role='Process']:
-   [ State_1111( pki.1 ) ]
-  -->
-   [ State_11111( pki.1 ), State_11112( pki.1 ) ]
+   [ State_1111( pki.1 ) ] --> [ State_11111( pki.1 ) ]
 
   /*
-  rule (modulo AC) Server_0_1111[color=#ffffff, process="Server()",
+  rule (modulo AC) Server_0_1111[color=#ffffff, process="Server();",
                                  issapicrule, role='Process']:
-     [ State_1111( pki ) ] --> [ State_11111( pki ), State_11112( pki ) ]
+     [ State_1111( pki ) ] --> [ State_11111( pki ) ]
   */
 
 rule (modulo E) p_0_11111[color=#806040, process="|", issapicrule,
@@ -381,7 +351,7 @@ rule (modulo E) lockSERVERuser_0_11111211[color=#806040,
 
 rule (modulo E) lookupSERVERpkiuseraspksk_0_111112111[color=#806040,
                                                       process="lookup <'SERVER', pki.1, user.2> as pksk.1",
-                                                      derivchecks, issapicrule, role='Server']:
+                                                      no_derivcheck, issapicrule, role='Server']:
    [ State_111112111( lock.1, nsk.1, pki.1, sk.2, user.2 ) ]
   --[ IsIn( <'SERVER', pki.1, user.2>, pksk.1 ) ]->
    [ State_1111121111( lock.1, nsk.1, pki.1, pksk.1, sk.2, user.2 ) ]
@@ -389,7 +359,7 @@ rule (modulo E) lookupSERVERpkiuseraspksk_0_111112111[color=#806040,
   /*
   rule (modulo AC) lookupSERVERpkiuseraspksk_0_111112111[color=#806040,
                                                          process="lookup <'SERVER', pki.1, user.2> as pksk.1",
-                                                         derivchecks, issapicrule, role='Server']:
+                                                         no_derivcheck, issapicrule, role='Server']:
      [ State_111112111( lock, nsk, pki, sk, user ) ]
     --[ IsIn( <'SERVER', pki, user>, pksk ) ]->
      [ State_1111121111( lock, nsk, pki, pksk, sk, user ) ]
@@ -397,7 +367,7 @@ rule (modulo E) lookupSERVERpkiuseraspksk_0_111112111[color=#806040,
 
 rule (modulo E) lookupSERVERpkiuseraspksk_1_111112111[color=#806040,
                                                       process="lookup <'SERVER', pki.1, user.2> as pksk.1",
-                                                      derivchecks, issapicrule, role='Server']:
+                                                      no_derivcheck, issapicrule, role='Server']:
    [ State_111112111( lock.1, nsk.1, pki.1, sk.2, user.2 ) ]
   --[ IsNotSet( <'SERVER', pki.1, user.2> ) ]->
    [ State_1111121112( lock.1, nsk.1, pki.1, sk.2, user.2 ) ]
@@ -405,7 +375,7 @@ rule (modulo E) lookupSERVERpkiuseraspksk_1_111112111[color=#806040,
   /*
   rule (modulo AC) lookupSERVERpkiuseraspksk_1_111112111[color=#806040,
                                                          process="lookup <'SERVER', pki.1, user.2> as pksk.1",
-                                                         derivchecks, issapicrule, role='Server']:
+                                                         no_derivcheck, issapicrule, role='Server']:
      [ State_111112111( lock, nsk, pki, sk, user ) ]
     --[ IsNotSet( <'SERVER', pki, user> ) ]->
      [ State_1111121112( lock, nsk, pki, sk, user ) ]
@@ -549,16 +519,6 @@ rule (modulo E) p_0_1111121112[color=#806040, process="0", issapicrule,
      [ State_1111121112( lock, nsk, pki, sk, user ) ] --> [ ]
   */
 
-rule (modulo E) p_0_11112[color=#ffffff, process="0", issapicrule,
-                          role='Process']:
-   [ State_11112( pki.1 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_11112[color=#ffffff, process="0", issapicrule,
-                             role='Process']:
-     [ State_11112( pki ) ] --> [ ]
-  */
-
 rule (modulo E) newuser_0_1112[color=#ffffff, process="new user.3;",
                                issapicrule, role='Process']:
    [ State_1112( pki.1 ), Fr( user.3 ) ]
@@ -609,18 +569,16 @@ rule (modulo E) p_1_111211[color=#ffffff, process="!", issapicrule,
      [ !Semistate_1112111( pki, user ) ] --> [ State_1112111( pki, user ) ]
   */
 
-rule (modulo E) Client_0_1112111[color=#ffffff, process="Client()",
+rule (modulo E) Client_0_1112111[color=#ffffff, process="Client();",
                                  issapicrule, role='Process']:
    [ State_1112111( pki.1, user.3 ) ]
   -->
-   [ State_11121111( pki.1, user.3 ), State_11121112( pki.1, user.3 ) ]
+   [ State_11121111( pki.1, user.3 ) ]
 
   /*
-  rule (modulo AC) Client_0_1112111[color=#ffffff, process="Client()",
+  rule (modulo AC) Client_0_1112111[color=#ffffff, process="Client();",
                                     issapicrule, role='Process']:
-     [ State_1112111( pki, user ) ]
-    -->
-     [ State_11121111( pki, user ), State_11121112( pki, user ) ]
+     [ State_1112111( pki, user ) ] --> [ State_11121111( pki, user ) ]
   */
 
 rule (modulo E) newnsk_0_11121111[color=#518040, process="new ~nsk.2;",
@@ -657,7 +615,7 @@ rule (modulo E) lockUSERuser_0_111211111[color=#518040,
   */
 
 rule (modulo E) lookupUSERuserassk_0_1112111111[color=#518040,
-                                                process="lookup <'USER', user.3> as ~sk.3", derivchecks,
+                                                process="lookup <'USER', user.3> as ~sk.3", no_derivcheck,
                                                 issapicrule, role='Client']:
    [ State_1112111111( pki.1, ~nsk.2, lock.2, user.3 ) ]
   --[ IsIn( <'USER', user.3>, ~sk.3 ) ]->
@@ -665,7 +623,7 @@ rule (modulo E) lookupUSERuserassk_0_1112111111[color=#518040,
 
   /*
   rule (modulo AC) lookupUSERuserassk_0_1112111111[color=#518040,
-                                                   process="lookup <'USER', user.3> as ~sk.3", derivchecks,
+                                                   process="lookup <'USER', user.3> as ~sk.3", no_derivcheck,
                                                    issapicrule, role='Client']:
      [ State_1112111111( pki, ~nsk, lock, user ) ]
     --[ IsIn( <'USER', user>, ~sk ) ]->
@@ -673,7 +631,7 @@ rule (modulo E) lookupUSERuserassk_0_1112111111[color=#518040,
   */
 
 rule (modulo E) lookupUSERuserassk_1_1112111111[color=#518040,
-                                                process="lookup <'USER', user.3> as ~sk.3", derivchecks,
+                                                process="lookup <'USER', user.3> as ~sk.3", no_derivcheck,
                                                 issapicrule, role='Client']:
    [ State_1112111111( pki.1, ~nsk.2, lock.2, user.3 ) ]
   --[ IsNotSet( <'USER', user.3> ) ]->
@@ -681,7 +639,7 @@ rule (modulo E) lookupUSERuserassk_1_1112111111[color=#518040,
 
   /*
   rule (modulo AC) lookupUSERuserassk_1_1112111111[color=#518040,
-                                                   process="lookup <'USER', user.3> as ~sk.3", derivchecks,
+                                                   process="lookup <'USER', user.3> as ~sk.3", no_derivcheck,
                                                    issapicrule, role='Client']:
      [ State_1112111111( pki, ~nsk, lock, user ) ]
     --[ IsNotSet( <'USER', user> ) ]->
@@ -881,16 +839,6 @@ rule (modulo E) p_0_11121111112[color=#518040, process="0", issapicrule,
      [ State_11121111112( pki, ~nsk, lock, user ) ] --> [ ]
   */
 
-rule (modulo E) p_0_11121112[color=#ffffff, process="0", issapicrule,
-                             role='Process']:
-   [ State_11121112( pki.1, user.3 ) ] --> [ ]
-
-  /*
-  rule (modulo AC) p_0_11121112[color=#ffffff, process="0", issapicrule,
-                                role='Process']:
-     [ State_11121112( pki, user ) ] --> [ ]
-  */
-
 restriction set_in:
   "∀ x y #t3.
     (IsIn( x, y ) @ #t3) ⇒
@@ -900,6 +848,17 @@ restriction set_in:
       (∀ #t1 yp.
         (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x y #t3.
+    (IsIn( x, y ) @ #t3) ⇒
+    (∃ #t2.
+      (((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ∧
+       (∀ #t1. (Delete( x ) @ #t1) ⇒ ((#t1 < #t2) ∨ (#t3 < #t1)))) ∧
+      (∀ #t1 yp.
+        (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
+  */
+
 restriction set_notin:
   "∀ x #t3.
     (IsNotSet( x ) @ #t3) ⇒
@@ -908,17 +867,42 @@ restriction set_notin:
        ((Delete( x ) @ #t1) ∧ (#t1 < #t3)) ∧
        (∀ #t2 y. ((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ⇒ (#t2 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x #t3.
+    (IsNotSet( x ) @ #t3) ⇒
+    ((∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1)) ∨
+     (∃ #t1.
+       ((Delete( x ) @ #t1) ∧ (#t1 < #t3)) ∧
+       (∀ #t2 y. ((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ⇒ (#t2 < #t1))))"
+  */
+
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 restriction locking_0:
   "∀ p pp l x lp #t1 #t3.
@@ -936,6 +920,24 @@ restriction locking_0:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_0( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_0( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_1:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -951,6 +953,24 @@ restriction locking_1:
            (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
+
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_1( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
 restriction locking_2:
   "∀ p pp l x lp #t1 #t3.
@@ -968,30 +988,32 @@ restriction locking_2:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_2( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_2( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
-
-Message Derivation Checks
-=========================
-
-  The variables of the following rule(s) are not derivable from their premises, you may be performing unintended pattern matching.
-
-Rule inrenewuserpknsk_0_111112: 
-Failed to derive Variable(s): nsk.1
-
-Rule insignrenewuserpknsksk_0_1111121: 
-Failed to derive Variable(s): sk.2
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -1003,10 +1025,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/MoedersheimWebService/set-abstr-lookup.spthy
 
   output:          examples/sapic/fast/MoedersheimWebService/set-abstr-lookup.spthy.tmp
-  processing time: 1.76s
-  
-  WARNING: 2 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 0.38s
   
   Knows_Honest_Key_imp_Revoked (all-traces): verified (11 steps)
 

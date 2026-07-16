@@ -1,16 +1,12 @@
-theory xorbasic begin
+theory xorbasic
+
+begin
 
 // Function signature and definition of the equational theory E
 
 builtins: xor
 functions: fst/1, pair/2, snd/1
 equations: fst(<x.1, x.2>) = x.1, snd(<x.1, x.2>) = x.2
-
-
-
-
-
-
 
 rule (modulo E) testsend:
    [ Fr( ~x ), Fr( ~y ), Fr( ~a ), Fr( ~b ) ]
@@ -136,6 +132,11 @@ restriction unique:
   "∀ #i #j. ((OnlyOnce( ) @ #i) ∧ (OnlyOnce( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((OnlyOnce( ) @ #i) ∧ (OnlyOnce( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 lemma secrecybroken:
   all-traces "∀ x #i. (Secret( x ) @ #i) ⇒ (¬(∃ #j. K( x ) @ #j))"
 /*
@@ -154,7 +155,7 @@ solve( splitEqs(0) )
         solve( (#vr, 0) ~~> (#vk, 0) )
           case d_xor_case_2
           solve( (#vr.1, 0) ~~> (#vk, 0) )
-            case Xor
+            case xor
             solve( !KU( (~a⊕~y) ) @ #vk.1 )
               case coerce
               solve( !KD( (~a⊕~y) ) ▶₀ #vk.1 )
@@ -166,7 +167,7 @@ solve( splitEqs(0) )
                     solve( (#vr.3, 0) ~~> (#vk.1, 0) )
                       case d_xor_case_2
                       solve( (#vr.4, 0) ~~> (#vk.1, 0) )
-                        case Xor
+                        case xor
                         solve( !KU( (~a⊕~b) ) @ #vk.2 )
                           case coerce
                           solve( !KD( (~a⊕~b) ) ▶₀ #vk.2 )
@@ -176,7 +177,7 @@ solve( splitEqs(0) )
                               solve( (#vr.2, 0) ~~> (#vk.2, 0) )
                                 case d_0_snd
                                 solve( (#vr.5, 0) ~~> (#vk.2, 0) )
-                                  case Xor
+                                  case xor
                                   SOLVED // trace found
                                 qed
                               qed
@@ -196,20 +197,14 @@ solve( splitEqs(0) )
   qed
 qed
 
-
-
-
-
-
-
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -221,7 +216,7 @@ summary of summaries:
 analyzed: examples/features/xor/basicfunctionality/xor-basic.spthy
 
   output:          examples/features/xor/basicfunctionality/xor-basic.spthy.tmp
-  processing time: 0.39s
+  processing time: 0.57s
   
   secrecybroken (all-traces): falsified - found trace (19 steps)
 

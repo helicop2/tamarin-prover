@@ -1,4 +1,6 @@
-theory EncWrapDecUnwrap begin
+theory EncWrapDecUnwrap
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -12,13 +14,7 @@ equations:
     sencSucc(senc(m, k), k) = true,
     snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
-
-
-
-
 
 lemma dec_limits [sources]:
   all-traces
@@ -14203,24 +14199,6 @@ next
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 rule (modulo E) Init[color=#ffffff, process="!", issapicrule,
                      role='Process']:
    [ ] --[ Init( ) ]-> [ State_( ) ]
@@ -14418,7 +14396,7 @@ rule (modulo E) lockLh_0_11111121[color=#ffffff, process="lock L_h.2;",
   */
 
 rule (modulo E) lookupLhasv_0_111111211[color=#ffffff,
-                                        process="lookup L_h.2 as v.1", derivchecks, issapicrule,
+                                        process="lookup L_h.2 as v.1", no_derivcheck, issapicrule,
                                         role='Process']:
    [ State_111111211( lock.1, L_h.2 ) ]
   --[ IsIn( L_h.2, v.1 ) ]->
@@ -14426,7 +14404,7 @@ rule (modulo E) lookupLhasv_0_111111211[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_0_111111211[color=#ffffff,
-                                           process="lookup L_h.2 as v.1", derivchecks, issapicrule,
+                                           process="lookup L_h.2 as v.1", no_derivcheck, issapicrule,
                                            role='Process']:
      [ State_111111211( lock, L_h ) ]
     --[ IsIn( L_h, v ) ]->
@@ -14434,7 +14412,7 @@ rule (modulo E) lookupLhasv_0_111111211[color=#ffffff,
   */
 
 rule (modulo E) lookupLhasv_1_111111211[color=#ffffff,
-                                        process="lookup L_h.2 as v.1", derivchecks, issapicrule,
+                                        process="lookup L_h.2 as v.1", no_derivcheck, issapicrule,
                                         role='Process']:
    [ State_111111211( lock.1, L_h.2 ) ]
   --[ IsNotSet( L_h.2 ) ]->
@@ -14442,7 +14420,7 @@ rule (modulo E) lookupLhasv_1_111111211[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_1_111111211[color=#ffffff,
-                                           process="lookup L_h.2 as v.1", derivchecks, issapicrule,
+                                           process="lookup L_h.2 as v.1", no_derivcheck, issapicrule,
                                            role='Process']:
      [ State_111111211( lock, L_h ) ]
     --[ IsNotSet( L_h ) ]->
@@ -14620,7 +14598,7 @@ rule (modulo E) lockLh_0_1111121[color=#ffffff, process="lock L_h.3;",
   */
 
 rule (modulo E) lookupLhasv_0_11111211[color=#ffffff,
-                                       process="lookup L_h.3 as v.2", derivchecks, issapicrule,
+                                       process="lookup L_h.3 as v.2", no_derivcheck, issapicrule,
                                        role='Process']:
    [ State_11111211( lock.2, L_h.3 ) ]
   --[ IsIn( L_h.3, v.2 ) ]->
@@ -14628,7 +14606,7 @@ rule (modulo E) lookupLhasv_0_11111211[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_0_11111211[color=#ffffff,
-                                          process="lookup L_h.3 as v.2", derivchecks, issapicrule,
+                                          process="lookup L_h.3 as v.2", no_derivcheck, issapicrule,
                                           role='Process']:
      [ State_11111211( lock, L_h ) ]
     --[ IsIn( L_h, v ) ]->
@@ -14636,7 +14614,7 @@ rule (modulo E) lookupLhasv_0_11111211[color=#ffffff,
   */
 
 rule (modulo E) lookupLhasv_1_11111211[color=#ffffff,
-                                       process="lookup L_h.3 as v.2", derivchecks, issapicrule,
+                                       process="lookup L_h.3 as v.2", no_derivcheck, issapicrule,
                                        role='Process']:
    [ State_11111211( lock.2, L_h.3 ) ]
   --[ IsNotSet( L_h.3 ) ]->
@@ -14644,7 +14622,7 @@ rule (modulo E) lookupLhasv_1_11111211[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_1_11111211[color=#ffffff,
-                                          process="lookup L_h.3 as v.2", derivchecks, issapicrule,
+                                          process="lookup L_h.3 as v.2", no_derivcheck, issapicrule,
                                           role='Process']:
      [ State_11111211( lock, L_h ) ]
     --[ IsNotSet( L_h ) ]->
@@ -14804,7 +14782,7 @@ rule (modulo E) lockLh_0_111121[color=#ffffff, process="lock L_h.4;",
   */
 
 rule (modulo E) lookupLhasv_0_1111211[color=#ffffff,
-                                      process="lookup L_h.4 as v.3", derivchecks, issapicrule,
+                                      process="lookup L_h.4 as v.3", no_derivcheck, issapicrule,
                                       role='Process']:
    [ State_1111211( c.1, lock.3, L_h.4 ) ]
   --[ IsIn( L_h.4, v.3 ) ]->
@@ -14812,7 +14790,7 @@ rule (modulo E) lookupLhasv_0_1111211[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_0_1111211[color=#ffffff,
-                                         process="lookup L_h.4 as v.3", derivchecks, issapicrule,
+                                         process="lookup L_h.4 as v.3", no_derivcheck, issapicrule,
                                          role='Process']:
      [ State_1111211( c, lock, L_h ) ]
     --[ IsIn( L_h, v ) ]->
@@ -14820,7 +14798,7 @@ rule (modulo E) lookupLhasv_0_1111211[color=#ffffff,
   */
 
 rule (modulo E) lookupLhasv_1_1111211[color=#ffffff,
-                                      process="lookup L_h.4 as v.3", derivchecks, issapicrule,
+                                      process="lookup L_h.4 as v.3", no_derivcheck, issapicrule,
                                       role='Process']:
    [ State_1111211( c.1, lock.3, L_h.4 ) ]
   --[ IsNotSet( L_h.4 ) ]->
@@ -14828,7 +14806,7 @@ rule (modulo E) lookupLhasv_1_1111211[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_1_1111211[color=#ffffff,
-                                         process="lookup L_h.4 as v.3", derivchecks, issapicrule,
+                                         process="lookup L_h.4 as v.3", no_derivcheck, issapicrule,
                                          role='Process']:
      [ State_1111211( c, lock, L_h ) ]
     --[ IsNotSet( L_h ) ]->
@@ -15087,14 +15065,15 @@ rule (modulo E) lockLh_0_11121[color=#ffffff, process="lock L_h.5;",
   */
 
 rule (modulo E) lookupLhasv_0_111211[color=#ffffff,
-                                     process="lookup L_h.5 as v.4", derivchecks, issapicrule, role='Process']:
+                                     process="lookup L_h.5 as v.4", no_derivcheck, issapicrule,
+                                     role='Process']:
    [ State_111211( m.2, lock.4, L_h.5 ) ]
   --[ IsIn( L_h.5, v.4 ) ]->
    [ State_1112111( m.2, lock.4, v.4, L_h.5 ) ]
 
   /*
   rule (modulo AC) lookupLhasv_0_111211[color=#ffffff,
-                                        process="lookup L_h.5 as v.4", derivchecks, issapicrule,
+                                        process="lookup L_h.5 as v.4", no_derivcheck, issapicrule,
                                         role='Process']:
      [ State_111211( m, lock, L_h ) ]
     --[ IsIn( L_h, v ) ]->
@@ -15102,14 +15081,15 @@ rule (modulo E) lookupLhasv_0_111211[color=#ffffff,
   */
 
 rule (modulo E) lookupLhasv_1_111211[color=#ffffff,
-                                     process="lookup L_h.5 as v.4", derivchecks, issapicrule, role='Process']:
+                                     process="lookup L_h.5 as v.4", no_derivcheck, issapicrule,
+                                     role='Process']:
    [ State_111211( m.2, lock.4, L_h.5 ) ]
   --[ IsNotSet( L_h.5 ) ]->
    [ State_1112112( m.2, lock.4, L_h.5 ) ]
 
   /*
   rule (modulo AC) lookupLhasv_1_111211[color=#ffffff,
-                                        process="lookup L_h.5 as v.4", derivchecks, issapicrule,
+                                        process="lookup L_h.5 as v.4", no_derivcheck, issapicrule,
                                         role='Process']:
      [ State_111211( m, lock, L_h ) ]
     --[ IsNotSet( L_h ) ]->
@@ -15270,7 +15250,7 @@ rule (modulo E) lockLh_0_1121[color=#ffffff, process="lock L_h1.1;",
   */
 
 rule (modulo E) lookupLhasv_0_11211[color=#ffffff,
-                                    process="lookup L_h1.1 as v1.1", derivchecks, issapicrule,
+                                    process="lookup L_h1.1 as v1.1", no_derivcheck, issapicrule,
                                     role='Process']:
    [ State_11211( L_h1.1, L_h2.1, lock.5 ) ]
   --[ IsIn( L_h1.1, v1.1 ) ]->
@@ -15278,7 +15258,7 @@ rule (modulo E) lookupLhasv_0_11211[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_0_11211[color=#ffffff,
-                                       process="lookup L_h1.1 as v1.1", derivchecks, issapicrule,
+                                       process="lookup L_h1.1 as v1.1", no_derivcheck, issapicrule,
                                        role='Process']:
      [ State_11211( L_h1, L_h2, lock ) ]
     --[ IsIn( L_h1, v1 ) ]->
@@ -15286,7 +15266,7 @@ rule (modulo E) lookupLhasv_0_11211[color=#ffffff,
   */
 
 rule (modulo E) lookupLhasv_1_11211[color=#ffffff,
-                                    process="lookup L_h1.1 as v1.1", derivchecks, issapicrule,
+                                    process="lookup L_h1.1 as v1.1", no_derivcheck, issapicrule,
                                     role='Process']:
    [ State_11211( L_h1.1, L_h2.1, lock.5 ) ]
   --[ IsNotSet( L_h1.1 ) ]->
@@ -15294,7 +15274,7 @@ rule (modulo E) lookupLhasv_1_11211[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_1_11211[color=#ffffff,
-                                       process="lookup L_h1.1 as v1.1", derivchecks, issapicrule,
+                                       process="lookup L_h1.1 as v1.1", no_derivcheck, issapicrule,
                                        role='Process']:
      [ State_11211( L_h1, L_h2, lock ) ]
     --[ IsNotSet( L_h1 ) ]->
@@ -15342,7 +15322,7 @@ rule (modulo E) ifattCvwrap_1_112111[color=#ffffff,
   */
 
 rule (modulo E) lookupLhasv_0_1121111[color=#ffffff,
-                                      process="lookup L_h2.1 as v2.1", derivchecks, issapicrule,
+                                      process="lookup L_h2.1 as v2.1", no_derivcheck, issapicrule,
                                       role='Process']:
    [ State_1121111( L_h1.1, L_h2.1, v1.1, lock.5 ) ]
   --[ IsIn( L_h2.1, v2.1 ) ]->
@@ -15350,7 +15330,7 @@ rule (modulo E) lookupLhasv_0_1121111[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_0_1121111[color=#ffffff,
-                                         process="lookup L_h2.1 as v2.1", derivchecks, issapicrule,
+                                         process="lookup L_h2.1 as v2.1", no_derivcheck, issapicrule,
                                          role='Process']:
      [ State_1121111( L_h1, L_h2, v1, lock ) ]
     --[ IsIn( L_h2, v2 ) ]->
@@ -15358,7 +15338,7 @@ rule (modulo E) lookupLhasv_0_1121111[color=#ffffff,
   */
 
 rule (modulo E) lookupLhasv_1_1121111[color=#ffffff,
-                                      process="lookup L_h2.1 as v2.1", derivchecks, issapicrule,
+                                      process="lookup L_h2.1 as v2.1", no_derivcheck, issapicrule,
                                       role='Process']:
    [ State_1121111( L_h1.1, L_h2.1, v1.1, lock.5 ) ]
   --[ IsNotSet( L_h2.1 ) ]->
@@ -15366,7 +15346,7 @@ rule (modulo E) lookupLhasv_1_1121111[color=#ffffff,
 
   /*
   rule (modulo AC) lookupLhasv_1_1121111[color=#ffffff,
-                                         process="lookup L_h2.1 as v2.1", derivchecks, issapicrule,
+                                         process="lookup L_h2.1 as v2.1", no_derivcheck, issapicrule,
                                          role='Process']:
      [ State_1121111( L_h1, L_h2, v1, lock ) ]
     --[ IsNotSet( L_h2 ) ]->
@@ -15579,14 +15559,15 @@ rule (modulo E) lockLh_0_121[color=#ffffff, process="lock L_h.6;",
   */
 
 rule (modulo E) lookupLhasv_0_1211[color=#ffffff,
-                                   process="lookup L_h.6 as v.5", derivchecks, issapicrule, role='Process']:
+                                   process="lookup L_h.6 as v.5", no_derivcheck, issapicrule,
+                                   role='Process']:
    [ State_1211( k.2, m.3, L_h.6, lock.6 ) ]
   --[ IsIn( L_h.6, v.5 ) ]->
    [ State_12111( k.2, m.3, v.5, L_h.6, lock.6 ) ]
 
   /*
   rule (modulo AC) lookupLhasv_0_1211[color=#ffffff,
-                                      process="lookup L_h.6 as v.5", derivchecks, issapicrule,
+                                      process="lookup L_h.6 as v.5", no_derivcheck, issapicrule,
                                       role='Process']:
      [ State_1211( k, m, L_h, lock ) ]
     --[ IsIn( L_h, v ) ]->
@@ -15594,14 +15575,15 @@ rule (modulo E) lookupLhasv_0_1211[color=#ffffff,
   */
 
 rule (modulo E) lookupLhasv_1_1211[color=#ffffff,
-                                   process="lookup L_h.6 as v.5", derivchecks, issapicrule, role='Process']:
+                                   process="lookup L_h.6 as v.5", no_derivcheck, issapicrule,
+                                   role='Process']:
    [ State_1211( k.2, m.3, L_h.6, lock.6 ) ]
   --[ IsNotSet( L_h.6 ) ]->
    [ State_12112( k.2, m.3, L_h.6, lock.6 ) ]
 
   /*
   rule (modulo AC) lookupLhasv_1_1211[color=#ffffff,
-                                      process="lookup L_h.6 as v.5", derivchecks, issapicrule,
+                                      process="lookup L_h.6 as v.5", no_derivcheck, issapicrule,
                                       role='Process']:
      [ State_1211( k, m, L_h, lock ) ]
     --[ IsNotSet( L_h ) ]->
@@ -15812,22 +15794,53 @@ restriction set_in:
       (∀ #t1 yp.
         (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
 
+  /*
+  expanded formula:
+  "∀ x y #t3.
+    (IsIn( x, y ) @ #t3) ⇒
+    (∃ #t2.
+      ((Insert( x, y ) @ #t2) ∧ (#t2 < #t3)) ∧
+      (∀ #t1 yp.
+        (Insert( x, yp ) @ #t1) ⇒ (((#t1 < #t2) ∨ (#t1 = #t2)) ∨ (#t3 < #t1))))"
+  */
+
 restriction set_notin:
   "∀ x #t3.
     (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #t3.
+    (IsNotSet( x ) @ #t3) ⇒ (∀ #t1 y. (Insert( x, y ) @ #t1) ⇒ (#t3 < #t1))"
+  */
+
 restriction predicate_eq:
   "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Eq( a, b ) @ #i) ⇒ (a = b)"
+  */
 
 restriction predicate_not_eq:
   "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i a b. (Pred_Not_Eq( a, b ) @ #i) ⇒ (¬(a = b))"
+  */
+
 restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
 
 restriction locking_0:
   "∀ p pp l x lp #t1 #t3.
@@ -15845,6 +15858,24 @@ restriction locking_0:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_0( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_0( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_1:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -15860,6 +15891,24 @@ restriction locking_1:
            (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
+
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_1( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_1( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
 restriction locking_2:
   "∀ p pp l x lp #t1 #t3.
@@ -15877,6 +15926,24 @@ restriction locking_2:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_2( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_2( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_3:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_3( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -15892,6 +15959,24 @@ restriction locking_3:
            (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
+
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_3( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_3( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
 restriction locking_4:
   "∀ p pp l x lp #t1 #t3.
@@ -15909,6 +15994,24 @@ restriction locking_4:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_4( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_4( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
+
 restriction locking_5:
   "∀ p pp l x lp #t1 #t3.
     ((Lock_5( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
@@ -15924,6 +16027,24 @@ restriction locking_5:
            (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
+
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_5( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_5( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
 restriction locking_6:
   "∀ p pp l x lp #t1 #t3.
@@ -15941,27 +16062,32 @@ restriction locking_6:
       (#t3 < #t1)) ∨
      (#t1 = #t3))"
 
-/*
-WARNING: the following wellformedness checks failed!
+  /*
+  expanded formula:
+  "∀ p pp l x lp #t1 #t3.
+    ((Lock_6( p, l, x ) @ #t1) ∧ (Lock( pp, lp, x ) @ #t3)) ⇒
+    ((((#t1 < #t3) ∧
+       (∃ #t2.
+         (((((Unlock_6( p, l, x ) @ #t2) ∧ (#t1 < #t2)) ∧ (#t2 < #t3)) ∧
+           (∀ #t0 pp.1. (Unlock( pp.1, l, x ) @ #t0) ⇒ (#t0 = #t2))) ∧
+          (∀ pp.1 lpp #t0.
+            (Lock( pp.1, lpp, x ) @ #t0) ⇒
+            (((#t0 < #t1) ∨ (#t0 = #t1)) ∨ (#t2 < #t0)))) ∧
+         (∀ pp.1 lpp #t0.
+           (Unlock( pp.1, lpp, x ) @ #t0) ⇒
+           (((#t0 < #t1) ∨ (#t2 < #t0)) ∨ (#t2 = #t0))))) ∨
+      (#t3 < #t1)) ∨
+     (#t1 = #t3))"
+  */
 
-Wellformedness-error in Process
-  There is an unlock that cannot be matched with a lock.
-
-Message Derivation Checks
-=========================
-
-  The variables of the following rule(s) are not derivable from their premises, you may be performing unintended pattern matching.
-
-Rule inLhsencmk_0_12: 
-Failed to derive Variable(s): k.2, m.3
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -15973,10 +16099,7 @@ summary of summaries:
 analyzed: examples/sapic/slow/encWrapDecUnwrap/encwrapdecunwrap.spthy
 
   output:          examples/sapic/slow/encWrapDecUnwrap/encwrapdecunwrap.spthy.tmp
-  processing time: 46.77s
-  
-  WARNING: 2 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 39.04s
   
   dec_limits (all-traces): verified (280 steps)
   wrap_key_origins (all-traces): verified (1109 steps)

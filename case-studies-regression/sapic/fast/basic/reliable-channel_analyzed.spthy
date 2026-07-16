@@ -1,4 +1,6 @@
-theory reliableChannels begin
+theory reliableChannels
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -8,17 +10,7 @@ equations:
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
-
-
 heuristic: p
-
-
-
-
-
-
-
-
 
 lemma A_possible:
   exists-trace "∃ #t. A( ) @ #t"
@@ -88,22 +80,6 @@ solve( (#t1 < #t2)  ∥ (#t2 < #t1) )
     qed
   qed
 qed
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 rule (modulo E) MessageIDRule[color=#ffffff, process="+", issapicrule,
                               role='Process']:
@@ -201,14 +177,19 @@ restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -220,7 +201,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/basic/reliable-channel.spthy
 
   output:          examples/sapic/fast/basic/reliable-channel.spthy.tmp
-  processing time: 0.10s
+  processing time: 0.04s
   
   A_possible (exists-trace): verified (3 steps)
   B_possible (exists-trace): verified (3 steps)

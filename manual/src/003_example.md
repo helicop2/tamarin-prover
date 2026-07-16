@@ -32,7 +32,7 @@ After the keyword `begin`, we first declare the cryptographic primitives the
 protocol uses. Afterward, we declare multiset rewriting rules that model
 the protocol, and finally we write the properties to be proven (called
 *lemmas* within the Tamarin framework), which specify the protocol's desired
-security properties.  Note that we have also inserted comments to structure the
+security properties. Note that we have also inserted comments to structure the
 theory.
 
 We next explain in detail the protocol model.
@@ -272,14 +272,18 @@ describing the adversary, the multiset rewrite rules and restrictions describing
 your protocol, and the raw and refined sources, followed by the
 lemmas you want to prove. We will explain each of these in the following.
 
-On the right hand side, you have a quick summary of the available
-commands and keyboard shortcuts you can use to navigate inside the
-theory. In the top right corner there are some links: `Index` leads
-back to the welcome page, `Download` allows you to download the
-current theory (including partial proofs if they exist), `Actions` and
-the sub-bullet `Show source` shows the theory's source code,
-and `Options` allows you to configure the level of details in the
-graph visualization (see below for examples).
+On the right hand side, you have a quick summary of the available commands and
+keyboard shortcuts you can use to navigate inside the theory. In the top right
+corner there are some links: `Index` leads back to the welcome page. 
+`Reload file` (only for locally loaded files) re-reads the theory file from disk
+and performs all the required precomputations, which is useful when editing the
+`.spthy` file outside of the web interface. The `Actions` menu contains 
+`Show source` which displays the theory's source code in a new tab, 
+`Download source` which downloads the current theory (including partial proofs
+if they exist), and `Append modified lemmas to file` (only for locally loaded
+files) which appends any lemmas you've edited in the GUI to the end of your file
+as comments. The `Options` menu allows you to configure the level of details in
+the graph visualization (see below for examples).
 
 If you click on `Message theory` on the left, you should see the following:
 
@@ -430,11 +434,21 @@ visualized using round boxes).  Just below the graph, the formula
 
 now states that any occurrence of `LtkReveal( S )` will lead to a contradiction.
 
-To finish the proof, we can either continue manually by selecting the constraint
-to resolve next, or by calling the `autoprove` command, which selects the next
-steps based on a heuristic. Here we have two constraints to resolve: 
-`Client_1( S, k )` and `KU( k )`, both of which are premises for the rules in 
-the unfinished current constraint system.
+We can either inspect the graph in the main window, or we can open the graph in
+another window by clicking the `Open the Graph in New Tab` link or the `Popout`
+button under certain graphs. The links under graphs in the resources tab (Raw
+Resources or Refined Resources) or of the subcases under the main proof steps
+will open the same graph in a new tab. The buttons under the main proof graph
+will open the same graph in a new window with dynamic rendering enabled; i.e.,
+when we navigate through the proof steps (either by clicking at a certain proof
+step or using the `j` or `k` keys), the graph in the new window will change
+accordingly. This is especially useful when working with large proof graphs.
+
+To finish the proof at hand, we can either continue manually by selecting the
+constraint to resolve next, or by calling the `autoprove` command, which
+selects the next steps based on a heuristic. Here we have two constraints to
+resolve: `Client_1( S, k )` and `KU( k )`, both of which are premises for the
+rules in the unfinished current constraint system.
 
 Note that the proof methods in the GUI are sorted according to the same 
 heuristic as is used by the `autoprove` command. Any proof found by always 

@@ -1,17 +1,15 @@
-theory SimpleIf begin
+theory SimpleIf
+
+begin
 
 // Function signature and definition of the equational theory E
 
 functions: fst/1, pair/2, snd/1
 equations: fst(<x.1, x.2>) = x.1, snd(<x.1, x.2>) = x.2
 
-
-
 heuristic: p
 
 predicate: Equal( h1, h2 )<=>h1 = h2
-
-
 
 lemma bogus_exists:
   exists-trace "∃ #i. Bogus( ) @ #i"
@@ -24,12 +22,6 @@ solve( State_11( h ) ▶₀ #i )
   case ifEqualhh_0_1
   SOLVED // trace found
 qed
-
-
-
-
-
-
 
 rule (modulo E) Init[color=#ffffff, process="new h.1;", issapicrule,
                      role='Process']:
@@ -51,6 +43,11 @@ restriction Restr_ifEqualhh_0_1_1:
   "∀ x #NOW x.1. (Restr_ifEqualhh_0_1_1( x, x.1 ) @ #NOW) ⇒ (x = x.1)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ x #NOW x.1. (Restr_ifEqualhh_0_1_1( x, x.1 ) @ #NOW) ⇒ (x = x.1)"
+  */
+
 rule (modulo E) ifEqualhh_0_1[color=#ffffff,
                               process="if Equal( h.1, h.1 )", issapicrule, role='Process']:
    [ State_1( h.1 ) ]
@@ -66,6 +63,11 @@ rule (modulo E) ifEqualhh_0_1[color=#ffffff,
 restriction Restr_ifEqualhh_1_1_1:
   "∀ x #NOW x.1. (Restr_ifEqualhh_1_1_1( x, x.1 ) @ #NOW) ⇒ (¬(x = x.1))"
   // safety formula
+
+  /*
+  expanded formula:
+  "∀ x #NOW x.1. (Restr_ifEqualhh_1_1_1( x, x.1 ) @ #NOW) ⇒ (¬(x = x.1))"
+  */
 
 rule (modulo E) ifEqualhh_1_1[color=#ffffff,
                               process="if Equal( h.1, h.1 )", issapicrule, role='Process']:
@@ -113,14 +115,19 @@ restriction single_session:
   "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
   // safety formula
 
+  /*
+  expanded formula:
+  "∀ #i #j. ((Init( ) @ #i) ∧ (Init( ) @ #j)) ⇒ (#i = #j)"
+  */
+
 /* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -132,7 +139,7 @@ summary of summaries:
 analyzed: examples/sapic/fast/feature-predicates/simple_example.spthy
 
   output:          examples/sapic/fast/feature-predicates/simple_example.spthy.tmp
-  processing time: 0.07s
+  processing time: 0.04s
   
   bogus_exists (exists-trace): verified (3 steps)
 

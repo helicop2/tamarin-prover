@@ -1,4 +1,6 @@
-theory Joux_EphkRev begin
+theory Joux_EphkRev
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -9,17 +11,7 @@ equations:
     snd(<x.1, x.2>) = x.2,
     verify(sign(x.1, x.2), x.1, pk(x.2)) = true
 
-
-
-
-
 section{* The Joux Protocol using Signatures*}
-
-
-
-
-
-
 
 rule (modulo E) Register_pk:
    [ Fr( ~ltk ) ]
@@ -1033,38 +1025,14 @@ solve( SessionKey( A, (B++C), sessKey ) @ #i )
   qed
 qed
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-WARNING: the following wellformedness checks failed!
-
-Message Derivation Checks
-=========================
-
-  The variables of the following rule(s) are not derivable from their premises, you may be performing unintended pattern matching.
-
-Rule Proto2: 
-Failed to derive Variable(s): ltkB, ltkC
-*/
+/* All wellformedness checks were successful. */
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -1076,10 +1044,7 @@ summary of summaries:
 analyzed: examples/ake/bilinear/Joux_EphkRev.spthy
 
   output:          examples/ake/bilinear/Joux_EphkRev.spthy.tmp
-  processing time: 5.95s
-  
-  WARNING: 1 wellformedness check failed!
-           The analysis results might be wrong!
+  processing time: 7.53s
   
   session_key_establish (exists-trace): verified (28 steps)
   Session_Key_Secrecy_PFS (all-traces): falsified - found trace (14 steps)

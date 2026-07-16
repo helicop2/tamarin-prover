@@ -14,6 +14,7 @@ module Web.Theory
 --  , htmlThyDbgPath
   , imgThyPath
   , imgDiffThyPath
+  , interactiveDotDiffThyPath
   , titleThyPath
   , titleDiffThyPath
   , theoryIndex
@@ -32,6 +33,7 @@ module Web.Theory
   , applyProverAtPath
   , applyDiffProverAtPath
   , applyProverAtPathDiff
+  , dotGraphString
   )
 where
 
@@ -47,6 +49,8 @@ import Data.Maybe
 import Data.Set qualified as S
 import Data.Text qualified as T
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import Extension.Data.Label qualified as L
+
 
 import System.Directory
 import System.FilePath
@@ -63,7 +67,8 @@ import System.Process hiding (system)
 import Logic.Connectives
 import Theory hiding (lPlaintext)
 import Theory.Text.Pretty
-import TheoryObject (theoryMacros, prettyTactic, diffTheoryMacros, DiffLemma (..))
+import ClosedTheory (prettyClosedProtoRule)
+import TheoryObject (theoryMacros, prettyTactic, diffTheoryMacros, diffTheorySideRules, DiffLemma (..))
 
 import Web.Settings
 import Web.Types
@@ -159,6 +164,18 @@ refDotPath renderUrl tidx path = closedTag "img" [("class", "graph"), ("src", im
     imgPath = T.unpack $ renderUrl (TheoryGraphR tidx path)
     jsOpenSrcInNewTab = "window.open(this.src, '_blank')"
 
+-- | Reference an interactive dot graph with static popup for the given path.
+refDotInteractiveStaticPath :: HtmlDocument d => RenderUrl -> TheoryIdx -> TheoryPath -> d
+refDotInteractiveStaticPath renderUrl tidx path = withTag "static-graph" [("graphSrc", srcPath)] (text "")
+  where
+    srcPath = T.unpack $ renderUrl (InteractiveDotGraphR tidx path)
+
+-- | Reference an interactive dot graph for the given path.
+refDotInteractiveDynamicPath :: HtmlDocument d => RenderUrl -> TheoryIdx -> TheoryPath -> d
+refDotInteractiveDynamicPath renderUrl tidx path = withTag "dynamic-graph" [("graphSrc", srcPath)] (text "")
+  where
+    srcPath = T.unpack $ renderUrl (InteractiveDotGraphR tidx path)
+
 -- | Reference a dot graph for the given diff path.
 refDotDiffPath :: HtmlDocument d => RenderUrl -> TheoryIdx -> DiffTheoryPath -> Bool -> d
 refDotDiffPath renderUrl tidx path mirror = withTag "a" [("href", imgPath), ("target", "_blank")] $ closedTag "img" [("class", "graph"), ("src", imgPath)]
@@ -166,6 +183,14 @@ refDotDiffPath renderUrl tidx path mirror = withTag "a" [("href", imgPath), ("ta
     imgPath = if mirror
               then T.unpack $ renderUrl (TheoryMirrorDiffR tidx path)
               else T.unpack $ renderUrl (TheoryGraphDiffR tidx path)
+    
+-- | Reference an interactive dot graph for the given diff path.
+refDotInteractiveDiffPath :: HtmlDocument d => RenderUrl -> TheoryIdx -> DiffTheoryPath -> Bool -> d
+refDotInteractiveDiffPath renderUrl tidx path mirror= withTag "static-graph" [("graphSrc", srcPath)] (text "")
+  where
+    srcPath = if mirror
+              then T.unpack $ renderUrl (InteractiveDotGraphMirrorDiffR tidx path)
+              else T.unpack $ renderUrl (InteractiveDotGraphDiffR tidx path)
 
 -- | Generate the dot file path for an intermediate dot output.
 getDotPath :: String -> FilePath
@@ -504,7 +529,7 @@ subProofSnippet renderUrl renderImgUrl tidx ti lemma proofPath ctxt prf =
         [ text ""
         , withTag "h3" [] (text "Constraint system")
         ] ++
-        [ refDotPath renderImgUrl tidx (TheoryProof lemma proofPath)
+        [ refDotInteractiveDynamicPath renderImgUrl tidx (TheoryProof lemma proofPath)
         | nonEmptyGraph se ]
         ++
         [ preformatted (Just "sequent") (prettyNonGraphSystem se)
@@ -581,7 +606,7 @@ subProofSnippet renderUrl renderImgUrl tidx ti lemma proofPath ctxt prf =
     refSubCase (name, prf') =
         [ withTag "h4" [] (text "Case" <-> text name)
         , maybe (text "no proof state available")
-                (const $ refDotPath renderUrl tidx $ TheoryProof lemma (proofPath ++ [name]))
+                (const $ (refDotInteractiveStaticPath renderUrl tidx $ TheoryProof lemma (proofPath ++ [name])))
                 (psInfo $ root prf')
         ]
 
@@ -606,7 +631,7 @@ subProofDiffSnippet renderUrl tidx ti s lemma proofPath ctxt prf =
         [ text ""
         , withTag "h3" [] (text "Constraint system")
         ] ++
-        [ refDotDiffPath renderUrl tidx (DiffTheoryProof s lemma proofPath) False
+        [ refDotInteractiveDiffPath renderUrl tidx (DiffTheoryProof s lemma proofPath) False
         | nonEmptyGraph se ]
         ++
         [ preformatted (Just "sequent") (prettyNonGraphSystem se)
@@ -675,7 +700,7 @@ subProofDiffSnippet renderUrl tidx ti s lemma proofPath ctxt prf =
     refSubCase (name, prf') =
         [ withTag "h4" [] (text "Case" <-> text name)
         , maybe (text "no proof state available")
-                (const $ refDotDiffPath renderUrl tidx (DiffTheoryProof s lemma (proofPath ++ [name])) False)
+                (const $ refDotInteractiveDiffPath renderUrl tidx (DiffTheoryProof s lemma (proofPath ++ [name])) False) 
                 (psInfo $ root prf')
         ]
 
@@ -699,7 +724,7 @@ subDiffProofSnippet renderUrl tidx ti lemma proofPath ctxt prf =
         [ text ""
         , withTag "h3" [] (text "Constraint system")
         ] ++
-        [ refDotDiffPath renderUrl tidx (DiffTheoryDiffProof lemma proofPath) False
+        [ refDotInteractiveDiffPath renderUrl tidx (DiffTheoryDiffProof lemma proofPath) False
         | nonEmptyGraphDiff se ]
         ++
         mirrorSystem
@@ -730,16 +755,16 @@ subDiffProofSnippet renderUrl tidx ti lemma proofPath ctxt prf =
     mirrorSystem =
         if dpsMethod (root prf) == DiffMirrored
            then [ text "", withTag "h3" [] (text "mirror:") ] ++
-                [ refDotDiffPath renderUrl tidx (DiffTheoryDiffProof lemma proofPath) True ] ++
+                [ refDotInteractiveDiffPath renderUrl tidx (DiffTheoryDiffProof lemma proofPath) True] ++
                 [ text "" ]
         else if dpsMethod (root prf) == DiffAttack
            then [ text "", withTag "h3" [] (text "attack:") ] ++
-                [ refDotDiffPath renderUrl tidx (DiffTheoryDiffProof lemma proofPath) True ] ++
+                [ refDotInteractiveDiffPath renderUrl tidx (DiffTheoryDiffProof lemma proofPath) True] ++
                 [ text "(If no attack graph is shown, the current graph has no mirrors. If one of the mirror graphs violates a restriction, this graph is shown.)" ] ++
                 [ text "" ]
         else if dpsMethod (root prf) == DiffUnfinishable
            then [ text "", withTag "h3" [] (text "mirror:") ] ++
-                [ refDotDiffPath renderUrl tidx (DiffTheoryDiffProof lemma proofPath) True ] ++
+                [ refDotInteractiveDiffPath renderUrl tidx (DiffTheoryDiffProof lemma proofPath) True] ++
                 [ text "The proof cannot be finished as there are reducible operators at the top of subterms in the subterm store." ] ++
                 [ text "" ]
            else []
@@ -787,7 +812,7 @@ subDiffProofSnippet renderUrl tidx ti lemma proofPath ctxt prf =
     refSubCase (name, prf') =
         [ withTag "h4" [] (text "Case" <-> text name)
         , maybe (text "no proof state available")
-                (const $ refDotDiffPath renderUrl tidx (DiffTheoryDiffProof lemma (proofPath ++ [name])) False)
+                (const $ refDotInteractiveDiffPath renderUrl tidx (DiffTheoryDiffProof lemma (proofPath ++ [name])) False)
                 (dpsInfo $ root prf')
         ]
 
@@ -811,8 +836,8 @@ htmlSource renderUrl tidx kind (j, th) =
       [ withTag "h3" [] $ fsep [ text "Source", int i, text "of", nCases
                                , text " / named ", doubleQuotes (text name),
                                  if isPartial then text "(partial deconstructions)" else text "" ]
-      , refDotPath renderUrl tidx (TheorySource kind j i)
-      , withTag "p" [] ppPrem
+      , refDotInteractiveStaticPath renderUrl tidx (TheorySource kind j i)
+      , withTag "p" [] $ ppPrem
       , wrapP $ prettyNonGraphSystem se
       ]
       where
@@ -839,7 +864,7 @@ htmlSourceDiff renderUrl tidx s kind d (j, th) =
       [ withTag "h3" [] $ fsep [ text "Source", int i, text "of", nCases
                                , text " / named ", doubleQuotes (text name),
                                  if isPartial then text "(partial deconstructions)" else text "" ]
-      , refDotDiffPath renderUrl tidx (DiffTheorySource s kind d j i) False
+      , refDotInteractiveDiffPath renderUrl tidx (DiffTheorySource s kind d j i) False
       , withTag "p" [] ppPrem
       , wrapP $ prettyNonGraphSystem se
       ]
@@ -866,19 +891,24 @@ rulesSnippet thy = vcat
         (prettyMacros $ theoryMacros thy)
     , ppWithHeader "Fact Symbols with Injective Instances" $
         (if null injFacts then text "None" else fsepList (text . showInjFact) injFacts)
-    , ppWithHeader "Multiset Rewriting Rules" $
-        (if null (theoryMacros thy) then text empty else text "(Shown with macros application)") <-> (vsep $ map prettyRuleAC msrRules)
-    , ppWithHeader "Restrictions of the Set of Traces" $
-        vsep $ map prettyRestriction $ theoryRestrictions thy
+    , ppWithHeader "Multiset Rewriting Rules" $ vcat (map prettyIntruderRuleAC extraACRules ++ map prettyClosedProtoRule protoRules )
+    , ppWithHeader "Restrictions of the Set of Traces" $ (vsep $ map prettyRestriction $ theoryRestrictions thy)
     ]
   where
-    msrRules   = (getClassifiedRules thy)._crProtocol
+    protoRules = theoryRules thy
+    -- Names of user-defined rules (from theoryRules)
+    protoRuleNames = S.fromList $ map (showRuleCaseName . L.get cprRuleE) protoRules
+    -- All AC rules from ClassifiedRules (including intruder generated rules)
+    allACRules   = (getClassifiedRules thy)._crProtocol
+    -- Only those not already printed (i.e., not in protoRules)
+    extraACRules = filter (\r -> showRuleCaseName r `S.notMember` protoRuleNames) allACRules
     injFacts   = S.toList $ getInjectiveFactInsts thy
     showInjFact (tag, behaviours) = showFactTag tag ++ "(" ++ intercalate "," ("id":positions) ++ ")"
       where positions = [case bb of
                           [b] -> show b
                           _   -> "(" ++ intercalate "," (map show bb) ++ ")"
                         | bb <- behaviours ]
+    prettyIntruderRuleAC r = prettyRuleAC r $--$ nest 2 (multiComment_ ["has exactly the trivial AC variant"]) $--$ text ""
     ppWithHeader header body =
         caseEmptyDoc
             emptyDoc
@@ -931,19 +961,24 @@ rulesDiffSnippetSide s isdiff thy = vcat
                                      else ppWithHeader "Macros" (prettyMacros $ diffTheoryMacros thy)
     , ppWithHeader "Fact Symbols with Injective Instances" $
         (if null injFacts then text "None" else fsepList (text . showInjFact) injFacts)
-    , ppWithHeader "Multiset Rewriting Rules" $
-        (if null (diffTheoryMacros thy) then text empty else text "(Shown with macros application)") <-> (vsep $ map prettyRuleAC msrRules)
-    , ppWithHeader "Restrictions of the Set of Traces" $
-        vsep $ map prettyRestriction $ diffTheorySideRestrictions s thy
+    , ppWithHeader "Multiset Rewriting Rules" $  vcat (map prettyIntruderRuleAC extraACRules ++ map prettyClosedProtoRule protoRules)
+    , ppWithHeader "Restrictions of the Set of Traces" $ (vsep $ map prettyRestriction $ diffTheorySideRestrictions s thy)
     ]
   where
-    msrRules = (getDiffClassifiedRules s isdiff thy)._crProtocol
+    -- Get all protocol rules for this side (user-defined)
+    protoRules = diffTheorySideRules s thy
+    protoRuleNames = S.fromList $ map (showRuleCaseName . L.get cprRuleE) protoRules
+    -- All AC rules from ClassifiedRules (including intruder generated rules)
+    allACRules   = (getDiffClassifiedRules s isdiff thy)._crProtocol
+    -- Only those not already printed (i.e., not in protoRules)
+    extraACRules = filter (\r -> showRuleCaseName r `S.notMember` protoRuleNames) allACRules
     injFacts = S.toList $ getDiffInjectiveFactInsts s isdiff thy
     showInjFact (tag, behaviours) = showFactTag tag ++ "(" ++ intercalate "," ("id":positions) ++ ")"
       where positions = [case bb of
                           [b] -> show b
                           _   -> "(" ++ intercalate "," (map show bb) ++ ")"
                         | bb <- behaviours ]
+    prettyIntruderRuleAC r = prettyRuleAC r $--$ nest 2 (multiComment_ ["has exactly the trivial AC variant"]) $--$ text ""
     ppWithHeader header body =
         caseEmptyDoc
             emptyDoc
@@ -1012,10 +1047,10 @@ htmlThyPath renderUrl renderImgUrl info path lPlaintext = case path of
                However, your changes will be kept on this page until you leave this right panel.
                <br>&zwnj;
               <li>
-               Editing a lemma will NOT modify the file it was loaded from, but clicking on the "append lemmas to file" button adds all modified lemmas as a comment at the end of the file on disk they were loaded from.
+               Editing a lemma will NOT modify the file it was loaded from, but clicking on "Append modified lemmas to file" in the Actions menu adds all modified lemmas as a comment at the end of the file on disk they were loaded from.
                <br>&zwnj;
               <li>
-               Clicking on the "Download" button will download the modified version of the theory (including the modified lemmas), but not modify the file on disk.
+               Clicking on "Download source" in the Actions menu will download the modified version of the theory (including the modified lemmas), but not modify the file on disk.
                <br>&zwnj;
               <li>
                Modifying a reuse lemma will invalidate all subsequent proofs.
@@ -1051,7 +1086,7 @@ htmlThyPath renderUrl renderImgUrl info path lPlaintext = case path of
            Clicking on the button above will delete the lemma from the loaded theory.
            <br>&zwnj;
           <li>
-           Deleting a lemma will NOT modify the file it was loaded from, but clicking on the "Download" button will download the modified version of the theory (so without the deleted lemmas).
+           Deleting a lemma will NOT modify the file it was loaded from, but clicking on "Download source" in the Actions menu will download the modified version of the theory (so without the deleted lemmas).
            <br>&zwnj;
           <li>
            Deleting a reuse lemma will invalidate all subsequent proofs.
@@ -1086,10 +1121,10 @@ htmlThyPath renderUrl renderImgUrl info path lPlaintext = case path of
              Adds the lemma in the current position in the theory, but will throw an error if a lemma with the same name exists, the parsing fails, or the lemma isn't well-formed.
              <br>&zwnj;
             <li>
-             Adding a lemma will NOT modify the loaded source file, but clicking on the "Append lemmas to file" button appends all added lemmas as a comment at the end of the current theory file.
+             Adding a lemma will NOT modify the loaded source file, but clicking on "Append modified lemmas to file" in the Actions menu appends all added lemmas as a comment at the end of the current theory file.
              <br>&zwnj;
             <li>
-             Clicking on the "Download" button will download the modified version of the theory (including the added lemmas).
+             Clicking on "Download source" in the Actions menu will download the modified version of the theory (including the added lemmas).
           <style>
               .wrap-text li {
                   white-space: normal;
@@ -1185,67 +1220,68 @@ helpHtml theoryName info renderUrl = [hamlet|
 
   <h3>Keyboard shortcuts
   <p>
-    <table>
-      <tr>
-        <td>
-          <span class="keys">j/k
-        <td>
-          Jump to the next/previous proof path within the currently
-          \ focused lemma.
-      <tr>
-        <td>
-          <span class="keys">J/K
-        <td>
-          Jump to the next/previous open constraint within the currently
-          \ focused lemma, or to the next/previous lemma if there are no
-          \ more #
-          <tt>sorry
-          \ steps in the proof of the current lemma.
-      <tr>
-        <td>
-          <span class="keys">1-9
-        <td>
-          Apply the proof method with the given number as shown in the
-          \ applicable proof method section in the main view.
-      <tr>
-        <td>
-          <span class="keys">a/A
-        <td>
-          Apply the autoprove method to the focused proof step.
-          \ <span class="keys">a</span>
-          \ stops after finding a solution, and
-          \ <span class="keys">A</span>
-          \ searches for all solutions.
-          \ Needs to have a #
-          <tt>sorry
-          \ selected to work.
-      <tr>
-        <td>
-          <span class="keys">b/B
-        <td>
-          Apply a bounded-depth version of the autoprove method to the
-          \ focused proof step.
-          \ <span class="keys">b</span>
-          \ stops after finding a solution, and
-          \ <span class="keys">B</span>
-          \ searches for all solutions.
-          \ Needs to have a #
-          <tt>sorry
-          \ selected to work.
-      <tr>
-        <td>
-          <span class="keys">s/S
-        <td>
-          Apply the autoprove method to all lemmas.
-          \ <span class="keys">s</span>
-          \ stops after finding a solution, and
-          \ <span class="keys">S</span>
-          \ searches for all solutions.
-      <tr>
-        <td>
-          <span class="keys">?
-        <td>
-          Display this help message.
+    <div id="shortcuts">
+      <table>
+        <tr>
+          <td>
+            <span class="keys">j/k
+          <td>
+            Jump to the next/previous proof path within the currently
+            \ focused lemma.
+        <tr>
+          <td>
+            <span class="keys">J/K
+          <td>
+            Jump to the next/previous open constraint within the currently
+            \ focused lemma, or to the next/previous lemma if there are no
+            \ more #
+            <tt>sorry
+            \ steps in the proof of the current lemma.
+        <tr>
+          <td>
+            <span class="keys">1-9
+          <td>
+            Apply the proof method with the given number as shown in the
+            \ applicable proof method section in the main view.
+        <tr>
+          <td>
+            <span class="keys">a/A
+          <td>
+            Apply the autoprove method to the focused proof step.
+            \ <span class="keys">a</span>
+            \ stops after finding a solution, and
+            \ <span class="keys">A</span>
+            \ searches for all solutions.
+            \ Needs to have a #
+            <tt>sorry
+            \ selected to work.
+        <tr>
+          <td>
+            <span class="keys">b/B
+          <td>
+            Apply a bounded-depth version of the autoprove method to the
+            \ focused proof step.
+            \ <span class="keys">b</span>
+            \ stops after finding a solution, and
+            \ <span class="keys">B</span>
+            \ searches for all solutions.
+            \ Needs to have a #
+            <tt>sorry
+            \ selected to work.
+        <tr>
+          <td>
+            <span class="keys">s/S
+          <td>
+            Apply the autoprove method to all lemmas.
+            \ <span class="keys">s</span>
+            \ stops after finding a solution, and
+            \ <span class="keys">S</span>
+            \ searches for all solutions.
+        <tr>
+          <td>
+            <span class="keys">?
+          <td>
+            Display this help message.
 |] renderUrl
 
 {-
@@ -1488,6 +1524,63 @@ imgDiffThyPath imgFormat dotCommand cacheDir_ compact thy path mirror = case pat
       s <- m
       if s then return True else firstSuccess ms
 
+-- | Render the .dot graph definition for the given theory path.
+-- Returns Nothing if there was an error during the process.
+interactiveDotDiffThyPath :: (System -> D.Dot ())
+           -> ClosedDiffTheory
+           -> DiffTheoryPath   
+           -> Bool                    -- ^ True if we want the mirror graph
+           -> Maybe String 
+interactiveDotDiffThyPath compact thy path mirror = go path
+  where
+    go (DiffTheorySource s k d i j) = Just $ casesDotCode s k i j d
+    go (DiffTheoryProof s l p)      = Just $ proofPathDotCode s l p
+    go (DiffTheoryDiffProof l p)    = Just $ proofPathDotCodeDiff l p mirror
+    go _                            = Nothing
+
+
+    -- Prefix dot code with comment mentioning all protocol rule names
+    prefixedShowDot dot = unlines
+        [ "// protocol rules: "          ++ ruleList (getProtoRuleEsDiff LHS thy) -- FIXME RS: the rule names are the same on LHS and RHS, so we just pick LHS; should pass the current Side through to make this clean
+        , "// message deduction rules: " ++ ruleList (getIntrVariantsDiff LHS thy) -- FIXME RS: the intruder rule names are the same on LHS and RHS; should pass the current Side through to make this clean
+--        , "// message deduction rules: " ++ ruleList ((intruderRules . get (_crcRules . diffThyCacheLeft)) thy) -- FIXME RS: again, we arbitrarily pick the LHS version of the cache, should be the same on both sides
+--intruderRules . L.get (crcRules . diffThyCacheLeft)
+        , D.showDot "G" dot
+        ]
+      where
+        ruleList :: HasRuleName (Rule i) => [Rule i] -> String
+        ruleList = concat . intersperse ", " . nub . map showRuleCaseName
+
+    -- Get dot code for required cases
+    casesDotCode s k i j isdiff = prefixedShowDot $
+        compact $ snd $ cases !! (i-1) !! (j-1)
+      where
+        cases = map (getDisj . (._cdCases)) (getDiffSource s isdiff k thy)
+
+    -- Get dot code for proof path in lemma
+    proofPathDotCode s lemma proofPath =
+      D.showDot "G" $ fromMaybe (return ()) $ do
+        subProof <- resolveProofPathDiff thy s lemma proofPath
+        sequent <- psInfo $ root subProof
+        return $ compact sequent
+
+    -- Get dot code for proof path in lemma
+    proofPathDotCodeDiff lemma proofPath mir =
+      D.showDot "G" $ fromMaybe (return ()) $ do
+        subProof <- resolveProofPathDiffLemma thy lemma proofPath
+        diffSequent <- dpsInfo $ root subProof
+        if mir
+          then do
+            lem <- lookupDiffLemma lemma thy
+            let ctxt = getDiffProofContext lem thy
+            side <- diffSequent._dsSide
+            let isSolved s sys' = null $ rankProofMethods GoalNrRanking [defaultTactic] (eitherProofContext ctxt s) sys' -- checks if the system is solved
+            nsequent <- diffSequent._dsSystem
+            -- Here we can potentially get Nothing if there is no mirror DG
+            let sequentList = snd $ getMirrorDGandEvaluateRestrictions ctxt diffSequent (isSolved side nsequent)
+            if null sequentList then Nothing else return $ compact $ head sequentList
+          else do
+            compact <$> diffSequent._dsSystem
 
 -- | Get title to display for a given proof path.
 titleThyPath :: ClosedTheory -> TheoryPath -> String
@@ -2122,3 +2215,29 @@ annotateDiffLemmaProof lem =
       InvalidatedProof  -> Yellow
       TraceFound        -> Red
       CompleteProof     -> Green
+
+dotGraphString :: (System -> D.Dot ())     -- ^ Function to render a System to Graphviz dot format.
+           -> ClosedTheory                 -- ^ Theory from which to extract the 'System'.
+           -> TheoryPath                   -- ^ Path of the 'System' in the theory.
+           -> Maybe String                 -- ^ Return .dot graph definition as a raw string 
+dotGraphString toDot thy thyPath = do
+  (_, system) <- thyPathSystem thyPath
+  return (D.showDot "G" (toDot system))
+  where
+    thyPathSystem :: TheoryPath -> Maybe (String, System)
+    thyPathSystem (TheorySource k i j)          = casesSystem k i j
+    thyPathSystem (TheoryProof lemma proofPath) = proofPathSystem lemma proofPath
+    thyPathSystem _                             = error "Unhandled theory path. This is a bug."
+
+    -- | Get a string serialization for one case.
+    casesSystem k i j = do
+      let jsonLabel = "Theory: " ++ thy._thyName ++ " Case: " ++ show i ++ ":" ++ show j
+          cases = map (getDisj . (._cdCases)) (getSource k thy)
+      return (jsonLabel, snd $ cases !! (i-1) !! (j-1))
+
+    -- | Get string serialization for proof path in lemma.
+    proofPathSystem lemma proofPath = do
+      let jsonLabel = "Theory: " ++ thy._thyName ++ " Lemma: " ++ lemma
+      subProof <- resolveProofPath thy lemma proofPath
+      sequent <- psInfo $ root subProof
+      return (jsonLabel, sequent)

@@ -1,4 +1,6 @@
-theory MacroDiffprobEnc begin
+theory MacroDiffprobEnc
+
+begin
 
 // Function signature and definition of the equational theory E
 
@@ -8,12 +10,7 @@ equations:
     pdec(penc(m, pk(k), r), k) = m,
     snd(<x.1, x.2>) = x.2
 
-
-
-
-
-macros:
-    pubkey( x ) = pk(x)
+macros: pubkey( x ) =  pk(x)
 
 rule (modulo E) enc:
    [ !Key( k ), Fr( ~r1 ), Fr( ~r2 ), In( x ) ]
@@ -69,7 +66,7 @@ next
   backward-search
     case LHS
     step( simplify )
-    step( solve( !KD( penc(m, pk(k), r) ) ▶₀ #i ) )
+    step( solve( !KD( penc(x, pk(x.1), x.2) ) ▶₀ #i ) )
       case enc
       by step( contradiction /* impossible chain */ )
     next
@@ -79,7 +76,7 @@ next
   next
     case RHS
     step( simplify )
-    step( solve( !KD( penc(m, pk(k), r) ) ▶₀ #i ) )
+    step( solve( !KD( penc(x, pk(x.1), x.2) ) ▶₀ #i ) )
       case enc
       step( solve( (#vl, 0) ~~> (#i, 0) ) )
         case d_0_pdec
@@ -238,10 +235,10 @@ qed
 
 /*
 Generated from:
-Tamarin version 1.11.0
-Maude version 3.4
-Git revision: a288673cab40b1e997ba23b077ef491d39c2bef6 (with uncommited changes), branch: fix-issue713
-Compiled at: 2025-06-18 14:31:09.981542 UTC
+Tamarin version 1.13.0
+Maude version 3.5.1
+Git revision: 53c49a44efa784b133c907eedf84491d61a48803 (with uncommited changes), branch: AC-NDC-property
+Compiled at: 2026-07-09 13:42:51.535083 UTC
 */
 
 end
@@ -253,7 +250,7 @@ summary of summaries:
 analyzed: examples/features/equivalence/MacroDiffprobEnc.spthy
 
   output:          examples/features/equivalence/MacroDiffprobEnc.spthy.tmp
-  processing time: 0.11s
+  processing time: 0.09s
   
   DiffLemma:  Observational_equivalence : verified (75 steps)
 
